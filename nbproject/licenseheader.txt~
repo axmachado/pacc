@@ -1,0 +1,9 @@
+<#if licenseFirst??>
+${licenseFirst}
+</#if>
+${licensePrefix}Copyright (c) 2015 - Jakub Kulham (jakubkulhan@gmail.com)
+${licensePrefix}                     2017 - Alexandre Machado (axmachado@gmail.com)
+${licensePrefix} 
+<#if licenseLast??>
+${licenseLast}
+</#if>

@@ -1,9 +1,45 @@
 <?php
+
+/*
+ *  pacc - PHP yACC
+ *  Parser Generator for PHP
+ * 
+ * Copyright (c) 2009-2010 Jakub Kulham (jakubkulhan@gmail.com)
+ *               2017 Alexandre Machado (axmachado@gmail.com)
+ * 
+ * The MIT license
+ * 
+ *     Permission is hereby granted, free of charge, to any person
+ *     obtaining a copy of this software and associated documentation
+ *     files (the "Software"), to deal in the Software without
+ *     restriction, including without limitation the rights to use,
+ *     copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *     copies of the Software, and to permit persons to whom the
+ *     Software is furnished to do so, subject to the following
+ *     conditions:
+ * 
+ *     The above copyright notice and this permission notice shall be
+ *     included in all copies or substantial portions of the Software.
+ * 
+ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ *     OTHER DEALINGS IN THE SOFTWARE.
+ * 
+ */
+
+namespace Pacc;
+
 /**
  * Generates LR parser
  */
 class PaccLRGenerator extends PaccGenerator
 {
+
     /**
      * @var PaccGrammar
      */
@@ -16,7 +52,7 @@ class PaccLRGenerator extends PaccGenerator
     private $table_pitch;
 
     /**
-     * @var PaccSet<PaccLRItem>[]
+     * @var PaccSet[]  <PaccLRItem>
      */
     private $states;
 
@@ -77,7 +113,6 @@ class PaccLRGenerator extends PaccGenerator
      */
     private $parse = 'doParse';
 
-
     /**
      * Initializes generator
      * @param PaccGrammar
@@ -114,7 +149,9 @@ class PaccLRGenerator extends PaccGenerator
      */
     protected function generate()
     {
-        if ($this->generated === NULL) { $this->doGenerate(); }
+        if ($this->generated === NULL) {
+            $this->doGenerate();
+        }
 
         return $this->generated;
     }
@@ -128,10 +165,12 @@ class PaccLRGenerator extends PaccGenerator
         // header
         $this->generated .= '<?php' . $this->eol;
 
-        if (strpos($this->grammar->name, '\\') === FALSE) { $classname = $this->grammar->name; }
+        if (strpos($this->grammar->name, '\\') === FALSE) {
+            $classname = $this->grammar->name;
+        }
         else {
-            $namespace = explode('\\', $this->grammar->name);
-            $classname = array_pop($namespace);
+            $namespace       = explode('\\', $this->grammar->name);
+            $classname       = array_pop($namespace);
             $this->generated .= 'namespace ' . implode('\\', $namespace) . ';' . $this->eol;
         }
 
@@ -141,30 +180,32 @@ class PaccLRGenerator extends PaccGenerator
         // parser
         $table = array();
         foreach ($this->table as $k => $v) {
-            if ($v === NULL) { continue; }
+            if ($v === NULL) {
+                continue;
+            }
             $table[] = $k . '=>' . $v;
         }
         $this->generated .= $this->indentation . 'private $_table = array(' . implode(',', $table) . ');' . $this->eol;
         $this->generated .= $this->indentation . 'private $_table_pitch = ' . $this->table_pitch . ';' . $this->eol;
 
-        $terminals_types = array();
+        $terminals_types  = array();
         $terminals_values = array();
         foreach ($this->grammar->terminals as $terminal) {
             if ($terminal->type !== NULL) {
                 $terminals_types[] = $this->terminals_prefix . $terminal->type . '=>' . $terminal->index;
-            } else if ($terminal->value !== NULL) {
+            }
+            else if ($terminal->value !== NULL) {
                 $terminals_values[] = var_export($terminal->value, TRUE) . '=>' . $terminal->index;
             }
-
         }
         $this->generated .= $this->indentation . 'private $_terminals_types = array(' . implode(',', $terminals_types) . ');' . $this->eol;
         $this->generated .= $this->indentation . 'private $_terminals_values = array(' . implode(',', $terminals_values) . ');' . $this->eol;
 
         $productions_lengths = array();
-        $productions_lefts = array();
+        $productions_lefts   = array();
         foreach ($this->grammar->productions as $production) {
             $productions_lengths[] = $production->index . '=>' . count($production->right);
-            $productions_lefts[] = $production->index . '=>' . $production->left->index;
+            $productions_lefts[]   = $production->index . '=>' . $production->left->index;
 
             $this->generated .= $this->indentation . 'private function _reduce' . $production->index . '() {' . $this->eol;
             $this->generated .= $this->indentation . $this->indentation . 'extract(func_get_arg(0), EXTR_PREFIX_INVALID, \'_\');' . $this->eol;
@@ -172,15 +213,18 @@ class PaccLRGenerator extends PaccGenerator
 
             if ($production->code !== NULL) {
                 $this->generated .= $this->indentation . $this->indentation . $this->phpizeVariables($production->code) . $this->eol;
-            } else {
+            }
+            else {
                 $this->generated .= $this->indentation . $this->indentation . $this->phpizeVariables('$$ = $1;') . $this->eol;
             }
 
             $this->generated .= $this->indentation . $this->indentation . $this->phpizeVariables('return $$;') . $this->eol;
             $this->generated .= $this->indentation . '}' . $this->eol;
         }
-        $this->generated .= $this->indentation . 'private $_productions_lengths = array(' . implode(',', $productions_lengths) . ');' . $this->eol;
-        $this->generated .= $this->indentation . 'private $_productions_lefts = array(' . implode(',', $productions_lefts) . ');' . $this->eol;
+        $this->generated .= $this->indentation . 'private $_productions_lengths = array(' . implode(',',
+                                                                                                    $productions_lengths) . ');' . $this->eol;
+        $this->generated .= $this->indentation . 'private $_productions_lefts = array(' . implode(',',
+                                                                                                  $productions_lefts) . ');' . $this->eol;
 
         $this->generated .= <<<E
     private function {$this->parse}() {
@@ -260,23 +304,22 @@ E;
         return str_replace('$$', '$__0', preg_replace('~\$(\d+)~', '$__$1', $s));
     }
 
-
     /**
      * Adds new start nonterminal and end terminal
      * @return void
      */
     private function augment()
     {
-        $newStart = new PaccNonterminal('$start');
+        $newStart                       = new PaccNonterminal('$start');
         $this->grammar->startProduction = new PaccProduction($newStart, array($this->grammar->start), NULL);
         $this->grammar->productions->add($this->grammar->startProduction);
         $this->grammar->nonterminals->add($newStart);
-        $this->grammar->start = $newStart;
+        $this->grammar->start           = $newStart;
 
-        $this->grammar->epsilon = new PaccTerminal('$epsilon');
+        $this->grammar->epsilon        = new PaccTerminal('$epsilon');
         $this->grammar->epsilon->index = -1;
 
-        $this->grammar->end = new PaccTerminal('$end');
+        $this->grammar->end        = new PaccTerminal('$end');
         $this->grammar->end->index = 0;
         $this->grammar->end->first = new PaccSet('integer');
         $this->grammar->end->first->add($this->grammar->end->index);
@@ -299,9 +342,9 @@ E;
         $this->max_terminal = $i - 1;
 
         foreach ($this->grammar->nonterminals as $nonterminal) {
-            $nonterminal->first = new PaccSet('integer');
+            $nonterminal->first  = new PaccSet('integer');
             $nonterminal->follow = new PaccSet('integer');
-            $nonterminal->index = $i++;
+            $nonterminal->index  = $i++;
         }
 
         $this->table_pitch = $i - 1;
@@ -329,14 +372,15 @@ E;
                 foreach ($production->right as $symbol) {
                     foreach ($symbol->first as $index) {
                         if ($index !== $this->grammar->epsilon->index &&
-                            !$production->left->first->contains($index))
-                        {
+                                !$production->left->first->contains($index)) {
                             $production->left->first->add($index);
                             $done = FALSE;
                         }
                     }
 
-                    if (!$symbol->first->contains($this->grammar->epsilon->index)) { break; }
+                    if (!$symbol->first->contains($this->grammar->epsilon->index)) {
+                        break;
+                    }
                 }
             }
         } while (!$done);
@@ -351,9 +395,13 @@ E;
 
         foreach ($this->grammar->productions as $production) {
             for ($i = 0, $len = count($production->right) - 1; $i < $len; ++$i) {
-                if ($production->right[$i] instanceof PaccTerminal) { continue; }
+                if ($production->right[$i] instanceof PaccTerminal) {
+                    continue;
+                }
                 foreach ($production->right[$i + 1]->first as $index) {
-                    if ($index === $this->grammar->epsilon->index) { continue; }
+                    if ($index === $this->grammar->epsilon->index) {
+                        continue;
+                    }
                     $production->right[$i]->follow->add($index);
                 }
             }
@@ -363,7 +411,9 @@ E;
             $done = TRUE;
             foreach ($this->grammar->productions as $production) {
                 for ($i = 0, $len = count($production->right); $i < $len; ++$i) {
-                    if ($production->right[$i] instanceof PaccTerminal) { continue; }
+                    if ($production->right[$i] instanceof PaccTerminal) {
+                        continue;
+                    }
 
                     $empty_after = TRUE;
                     for ($j = $i + 1; $j < $len; ++$j) {
@@ -387,22 +437,24 @@ E;
      */
     private function computeStates()
     {
-        $items = new PaccSet('PaccLRItem');
+        $items        = new PaccSet(PaccLRItem::class);
         $items->add(new PaccLRItem($this->grammar->startProduction, 0, $this->grammar->end->index));
         $this->states = array($this->closure($items));
-        $symbols = new PaccSet('PaccSymbol');
+        $symbols      = new PaccSet('PaccSymbol');
         $symbols->add($this->grammar->nonterminals);
         $symbols->add($this->grammar->terminals);
 
         for ($i = 0; $i < count($this->states); ++$i) { // intentionally count() in second clause
             foreach ($symbols as $symbol) {
                 $jump = $this->jump($this->states[$i], $symbol);
-                if ($jump->isEmpty()) { continue; }
+                if ($jump->isEmpty()) {
+                    continue;
+                }
                 $already_in = FALSE;
                 foreach ($this->states as $state) {
                     if ($state->__eq($jump)) {
                         $already_in = TRUE;
-                        $jump = $state;
+                        $jump       = $state;
                         break;
                     }
                 }
@@ -410,7 +462,7 @@ E;
                 if (!$already_in) {
                     $this->states[] = $jump;
                 }
-                
+
                 $this->jumps[] = new PaccLRJump($this->states[$i], $symbol, $jump);
             }
         }
@@ -430,16 +482,14 @@ E;
 
                 foreach ($items as $item) {
                     if (current($item->afterDot()) !== FALSE &&
-                        current($item->afterDot())->__eq($terminal))
-                    {
+                            current($item->afterDot())->__eq($terminal)) {
                         $do_shift = TRUE;
                         break;
                     }
                 }
 
                 if ($do_shift) {
-                    $this->table[$state * $this->table_pitch + $terminal->index] =
-                        $this->getNextState($items, $terminal);
+                    $this->table[$state * $this->table_pitch + $terminal->index] = $this->getNextState($items, $terminal);
                     if ($this->table[$state * $this->table_pitch + $terminal->index] === NULL) {
                         throw new Exception('Cannot get next state for shift.');
                     }
@@ -448,18 +498,23 @@ E;
 
             // reduces/accepts
             foreach ($items as $item) {
-                if (count($item->afterDot()) > 0) { continue; }
+                if (count($item->afterDot()) > 0) {
+                    continue;
+                }
                 $tableindex = $state * $this->table_pitch + $item->terminalindex;
 
                 if ($item->production->__eq($this->grammar->startProduction)) { // accept
                     $this->table[$tableindex] = 0;
-                } else {
+                }
+                else {
                     if (isset($this->table[$tableindex])) {
                         if ($this->table[$tableindex] > 0) {
                             throw new Exception('Shift-reduce conflict.');
-                        } else if ($this->table[$tableindex] < 0) {
+                        }
+                        else if ($this->table[$tableindex] < 0) {
                             throw new Exception('Reduce-reduce conflict: ' . $item);
-                        } else {
+                        }
+                        else {
                             throw new Exception('Accpet-reduce conflict: ' . $item);
                         }
                     }
@@ -470,8 +525,8 @@ E;
 
             // gotos
             foreach ($this->grammar->nonterminals as $nonterminal) {
-                $this->table[$state * $this->table_pitch + $nonterminal->index] =
-                    $this->getNextState($items, $nonterminal);
+                $this->table[$state * $this->table_pitch + $nonterminal->index] = $this->getNextState($items,
+                                                                                                      $nonterminal);
             }
         }
     }
@@ -481,10 +536,10 @@ E;
      */
     private function getNextState(PaccSet $items, PaccSymbol $symbol)
     {
-        if ($items->getType() !== 'PaccLRItem') {
-            throw new InvalidArgumentException(
-                'Bad type - expected PaccSet<LRItem>, given PaccSet<' .
-                $items->getType() . '>.'
+        if ($items->getType() !== PaccLRItem::class) {
+            throw new \InvalidArgumentException(
+            'Bad type - expected PaccSet<LRItem>, given PaccSet<' .
+            $items->getType() . '>.'
             );
         }
 
@@ -502,14 +557,14 @@ E;
     }
 
     /**
-     * @return PaccSet<PaccLRItem>
+     * @return PaccSet <PaccLRItem>
      */
     private function closure(PaccSet $items)
     {
-        if ($items->getType() !== 'PaccLRItem') {
-            throw new InvalidArgumentException(
-                'Bad type - expected PaccSet<LRItem>, given PaccSet<' .
-                $items->getType() . '>.'
+        if ($items->getType() !== PaccLRItem::class) {
+            throw new \InvalidArgumentException(
+            'Bad type - expected PaccSet<LRItem>, given PaccSet<' .
+            $items->getType() . '>.'
             );
         }
 
@@ -520,12 +575,11 @@ E;
 
             foreach ($items as $item) {
                 if (!(count($item->afterDot()) >= 1 &&
-                    current($item->afterDot()) instanceof PaccNonterminal))
-                {
+                        current($item->afterDot()) instanceof PaccNonterminal)) {
                     continue;
                 }
 
-                $newitems = new PaccSet('PaccLRItem');
+                $newitems   = new PaccSet(PaccLRItem::class);
                 $beta_first = new PaccSet('integer');
                 if (count($item->afterDot()) > 1) {
                     $beta_first->add(next($item->afterDot())->first);
@@ -552,32 +606,30 @@ E;
             }
 
             $items = $itemscopy;
-
         } while (!$done);
 
         return $items;
     }
 
     /**
-     * @param PaccSet<PaccLRItem>
+     * @param PaccSet <PaccLRItem>
      * @param PaccSymbol
-     * @return PaccSet<PaccLRItem>
+     * @return PaccSet <PaccLRItem>
      */
     private function jump(PaccSet $items, PaccSymbol $symbol)
     {
-        if ($items->getType() !== 'PaccLRItem') {
-            throw new InvalidArgumentException(
-                'Bad type - expected PaccSet<LRItem>, given PaccSet<' .
-                $items->getType() . '>.'
+        if ($items->getType() !== PaccLRItem::class) {
+            throw new \InvalidArgumentException(
+            'Bad type - expected PaccSet<LRItem>, given PaccSet<' .
+            $items->getType() . '>.'
             );
         }
 
-        $ret = new PaccSet('PaccLRItem');
+        $ret = new PaccSet(PaccLRItem::class);
 
         foreach ($items as $item) {
             if (!(current($item->afterDot()) !== FALSE &&
-                current($item->afterDot())->__eq($symbol)))
-            {
+                    current($item->afterDot())->__eq($symbol))) {
                 continue;
             }
 
@@ -586,4 +638,5 @@ E;
 
         return $this->closure($ret);
     }
+
 }

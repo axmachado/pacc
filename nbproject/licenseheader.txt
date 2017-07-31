@@ -1,0 +1,35 @@
+<#if licenseFirst??>
+${licenseFirst}
+</#if>
+${licensePrefix} pacc - PHP yACC
+${licensePrefix} Parser Generator for PHP
+${licensePrefix}
+${licensePrefix}Copyright (c) 2009-2010 Jakub Kulham (jakubkulhan@gmail.com)
+${licensePrefix}              2017 Alexandre Machado (axmachado@gmail.com)
+${licensePrefix}
+${licensePrefix}The MIT license
+${licensePrefix}
+${licensePrefix}    Permission is hereby granted, free of charge, to any person
+${licensePrefix}    obtaining a copy of this software and associated documentation
+${licensePrefix}    files (the "Software"), to deal in the Software without
+${licensePrefix}    restriction, including without limitation the rights to use,
+${licensePrefix}    copy, modify, merge, publish, distribute, sublicense, and/or sell
+${licensePrefix}    copies of the Software, and to permit persons to whom the
+${licensePrefix}    Software is furnished to do so, subject to the following
+${licensePrefix}    conditions:
+${licensePrefix}
+${licensePrefix}    The above copyright notice and this permission notice shall be
+${licensePrefix}    included in all copies or substantial portions of the Software.
+${licensePrefix}
+${licensePrefix}    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+${licensePrefix}    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+${licensePrefix}    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+${licensePrefix}    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+${licensePrefix}    HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+${licensePrefix}    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+${licensePrefix}    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+${licensePrefix}    OTHER DEALINGS IN THE SOFTWARE.
+${licensePrefix}
+<#if licenseLast??>
+${licenseLast}
+</#if>

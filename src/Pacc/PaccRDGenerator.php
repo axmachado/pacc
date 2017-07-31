@@ -1,9 +1,45 @@
 <?php
+
+/*
+ *  pacc - PHP yACC
+ *  Parser Generator for PHP
+ * 
+ * Copyright (c) 2009-2010 Jakub Kulham (jakubkulhan@gmail.com)
+ *               2017 Alexandre Machado (axmachado@gmail.com)
+ * 
+ * The MIT license
+ * 
+ *     Permission is hereby granted, free of charge, to any person
+ *     obtaining a copy of this software and associated documentation
+ *     files (the "Software"), to deal in the Software without
+ *     restriction, including without limitation the rights to use,
+ *     copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *     copies of the Software, and to permit persons to whom the
+ *     Software is furnished to do so, subject to the following
+ *     conditions:
+ * 
+ *     The above copyright notice and this permission notice shall be
+ *     included in all copies or substantial portions of the Software.
+ * 
+ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ *     OTHER DEALINGS IN THE SOFTWARE.
+ * 
+ */
+
+namespace Pacc;
+
 /**
  * Generates recursive descent parser
  */
 class PaccRDGenerator extends PaccGenerator
 {
+
     /**
      * Grammar
      * @var PaccGrammar
@@ -83,10 +119,12 @@ class PaccRDGenerator extends PaccGenerator
             $this->generated = '';
             $this->generated .= '<?php' . $this->eol;
 
-            if (strpos($this->grammar->name, '\\') === FALSE) { $classname = $this->grammar->name; }
+            if (strpos($this->grammar->name, '\\') === FALSE) {
+                $classname = $this->grammar->name;
+            }
             else {
-                $namespace = explode('\\', $this->grammar->name);
-                $classname = array_pop($namespace);
+                $namespace       = explode('\\', $this->grammar->name);
+                $classname       = array_pop($namespace);
                 $this->generated .= 'namespace ' . implode('\\', $namespace) . ';' . $this->eol;
             }
 
@@ -103,7 +141,7 @@ class PaccRDGenerator extends PaccGenerator
 
     /**
      * Converts rules to rules tree
-     * @param PaccSet<PaccProduction>
+     * @param PaccSet <PaccProduction>
      * @return array
      */
     protected function treeize($productions)
@@ -111,38 +149,51 @@ class PaccRDGenerator extends PaccGenerator
         $ret = array();
 
         foreach ($productions as $production) {
-            if (!isset($ret[$production->left->name])) { $ret[$production->left->name] = array(); }
-            $cur =& $ret[$production->left->name];
+            if (!isset($ret[$production->left->name])) {
+                $ret[$production->left->name] = array();
+            }
+            $cur = & $ret[$production->left->name];
 
             foreach ($production->right as $symbol) {
                 if ($symbol instanceof PaccNonterminal) {
-                    $type = 'N';
+                    $type  = 'N';
                     $value = $symbol->name;
-
-                } else {
+                }
+                else {
                     assert($symbol instanceof PaccTerminal);
 
                     if ($symbol->type !== NULL) {
-                        $type = 'T';
+                        $type  = 'T';
                         $value = $symbol->type;
-                    } else {
+                    }
+                    else {
                         assert($symbol->value !== NULL);
-                        $type = 'S';
+                        $type  = 'S';
                         $value = $symbol->value;
                     }
                 }
 
                 $k = $type . ':' . $value;
-                if (!isset($cur[$k])) { $cur[$k] = array(); }
-                $cur =& $cur[$k];
+                if (!isset($cur[$k])) {
+                    $cur[$k] = array();
+                }
+                $cur = & $cur[$k];
             }
 
-            if ($production->code !== NULL) { $cur['$'] = trim($production->code); }
-            else if (!empty($terms))        { $cur['$'] = '$$ = $1;'; }
-            else                            { $cur['$'] = '$$ = TRUE;'; }
+            if ($production->code !== NULL) {
+                $cur['$'] = trim($production->code);
+            }
+            else if (!empty($terms)) {
+                $cur['$'] = '$$ = $1;';
+            }
+            else {
+                $cur['$'] = '$$ = TRUE;';
+            }
         }
 
-        foreach ($ret as &$rule) { $rule = $this->treelifting($rule); }
+        foreach ($ret as &$rule) {
+            $rule = $this->treelifting($rule);
+        }
 
         return $ret;
     }
@@ -154,14 +205,18 @@ class PaccRDGenerator extends PaccGenerator
      */
     protected function treelifting($tree)
     {
-        if (count($tree) === 1 && isset($tree['$'])) { $tree = $tree['$']; }
+        if (count($tree) === 1 && isset($tree['$'])) {
+            $tree = $tree['$'];
+        }
         else {
-            if (isset($tree['$'])) { 
-                $_ = $tree['$']; 
-                unset($tree['$']); 
+            if (isset($tree['$'])) {
+                $_ = $tree['$'];
+                unset($tree['$']);
             }
 
-            foreach ($tree as $k => &$v) { $v = $this->treelifting($v); }
+            foreach ($tree as $k => &$v) {
+                $v = $this->treelifting($v);
+            }
 
             if (isset($_)) {
                 $tree['$'] = $_;
@@ -178,7 +233,9 @@ class PaccRDGenerator extends PaccGenerator
      */
     protected function phpize($treeish_rules, $indentation = NULL)
     {
-        if ($indentation === NULL) { $indentation = $this->indentation; }
+        if ($indentation === NULL) {
+            $indentation = $this->indentation;
+        }
 
         $ret = '';
 
@@ -217,7 +274,9 @@ class PaccRDGenerator extends PaccGenerator
      */
     protected function phpizeRuleTree($tree, $indentation = NULL, $i = 1)
     {
-        if ($indentation === NULL) { $indentation = $this->indentation; }
+        if ($indentation === NULL) {
+            $indentation = $this->indentation;
+        }
 
         if (is_string($tree)) {
             $lines = array();
@@ -227,33 +286,36 @@ class PaccRDGenerator extends PaccGenerator
             return $this->phpizeVariables(implode($this->eol, $lines));
         }
 
-        $ret = '';
+        $ret   = '';
         $first = TRUE;
-        $else = NULL;
-        $open = 1;
-        if (isset($tree['$'])) { $else = $tree['$']; unset($tree['$']); }
+        $else  = NULL;
+        $open  = 1;
+        if (isset($tree['$'])) {
+            $else = $tree['$'];
+            unset($tree['$']);
+        }
 
         foreach ($tree as $k => $v) {
 
-            $cond = '';
+            $cond          = '';
             $current_token = FALSE;
             switch ($k[0]) {
                 case 'S':
-                    $s = var_export(substr($k, 2), TRUE);
-                    $cond = '$this->_currentTokenLexeme() === ' . $s;
+                    $s             = var_export(substr($k, 2), TRUE);
+                    $cond          = '$this->_currentTokenLexeme() === ' . $s;
                     $current_token = TRUE;
-                break;
+                    break;
 
                 case 'T':
-                    $t = $this->phpizeTerminal(substr($k, 2));
-                    $cond = '$this->_currentTokenType() === ' . $t;
+                    $t             = $this->phpizeTerminal(substr($k, 2));
+                    $cond          = '$this->_currentTokenType() === ' . $t;
                     $current_token = TRUE;
-                break;
+                    break;
 
                 case 'N':
-                    $n = '_' . substr($k, 2) . '_';
-                    $cond = $this->phpizeVariables('($' . $i) .' = $this->' . $n . '()) !== NULL';
-                break;
+                    $n    = '_' . substr($k, 2) . '_';
+                    $cond = $this->phpizeVariables('($' . $i) . ' = $this->' . $n . '()) !== NULL';
+                    break;
             }
 
             $ret .= $indentation . (!$first ? 'else ' : '') . 'if (' . $cond . ') {' . $this->eol;
@@ -261,15 +323,23 @@ class PaccRDGenerator extends PaccGenerator
                 $ret .= $indentation . $this->indentation . $this->phpizeVariables('$' . $i . ' = $this->_currentToken();') . $this->eol;
                 $ret .= $indentation . $this->indentation . '$this->_nextToken();' . $this->eol;
             }
-            $ret .= $this->phpizeRuleTree($v, $indentation . $this->indentation, $i + 1) . $this->eol;
-            $ret .= $indentation . '}' . $this->eol;
+            $ret   .= $this->phpizeRuleTree($v, $indentation . $this->indentation, $i + 1) . $this->eol;
+            $ret   .= $indentation . '}' . $this->eol;
             $first = FALSE;
         }
 
-        if (!$first) { $ret .= $indentation . 'else {' . $this->eol; }
-        if ($else === NULL) { $ret .= $indentation . $this->indentation . $this->phpizeVariables('$$ = NULL;') . $this->eol; }
-        else { $ret .= $this->phpizeRuleTree($else, $indentation . $this->indentation) . $this->eol; }
-        if (!$first) { $ret .= $indentation . '}' . $this->eol; }
+        if (!$first) {
+            $ret .= $indentation . 'else {' . $this->eol;
+        }
+        if ($else === NULL) {
+            $ret .= $indentation . $this->indentation . $this->phpizeVariables('$$ = NULL;') . $this->eol;
+        }
+        else {
+            $ret .= $this->phpizeRuleTree($else, $indentation . $this->indentation) . $this->eol;
+        }
+        if (!$first) {
+            $ret .= $indentation . '}' . $this->eol;
+        }
 
         return $ret;
     }
@@ -293,4 +363,5 @@ class PaccRDGenerator extends PaccGenerator
     {
         return $this->terminals_prefix . $t;
     }
+
 }

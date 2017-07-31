@@ -1,42 +1,29 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
-/*LIBS*/
-require_once dirname(dirname(__FILE__)) . '/lib/exceptions.php';
 
-require_once dirname(dirname(__FILE__)) . '/lib/PaccSet.php';
-require_once dirname(dirname(__FILE__)) . '/lib/PaccGrammar.php';
-require_once dirname(dirname(__FILE__)) . '/lib/PaccSymbol.php';
-require_once dirname(dirname(__FILE__)) . '/lib/PaccNonterminal.php';
-require_once dirname(dirname(__FILE__)) . '/lib/PaccTerminal.php';
-require_once dirname(dirname(__FILE__)) . '/lib/PaccProduction.php';
+use Pacc\PaccTokenFilterOutStream;
+use Pacc\PaccLexer;
+use Pacc\PaccParser;
+use Pacc\Exceptions\PaccUnexpectedToken;
+use Pacc\Exceptions\PaccUnexpectedEnd;
+use Pacc\Exceptions\PaccBadIdentifier;
 
-require_once dirname(dirname(__FILE__)) . '/lib/PaccToken.php';
-require_once dirname(dirname(__FILE__)) . '/lib/tokens.php';
-require_once dirname(dirname(__FILE__)) . '/lib/PaccTokenStream.php';
-require_once dirname(dirname(__FILE__)) . '/lib/PaccTokenFilterOutStream.php';
-require_once dirname(dirname(__FILE__)) . '/lib/PaccLexer.php';
-
-require_once dirname(dirname(__FILE__)) . '/lib/PaccParser.php';
-
-require_once dirname(dirname(__FILE__)) . '/lib/PaccGenerator.php';
-
-require_once dirname(dirname(__FILE__)) . '/lib/PaccRDGenerator.php';
-
-require_once dirname(dirname(__FILE__)) . '/lib/PaccLRGenerator.php';
-require_once dirname(dirname(__FILE__)) . '/lib/PaccLRItem.php';
-require_once dirname(dirname(__FILE__)) . '/lib/PaccLRJump.php';
-/*ENDLIBS*/
+$autoloader = __DIR__ . '/../vendor/autoload.php';
+if (file_exists($autoloader)) {
+    require_once $autoloader;
+}
 
 $algorithms = array(
     'RD' => 'recursive descent',
     'LR' => 'canonical LR(1)',
 );
-$opts = array_merge(array(
-    'i' => '-', 
+$opts       = array_merge(array(
+    'i' => '-',
     'o' => '-'
-), getopt('hi:o:fa:'));
+        ), getopt('hi:o:fa:'));
 
-if (isset($opts['h'])) { $h = <<<E
+if (isset($opts['h'])) {
+    $h = <<<E
 {$_SERVER['argv'][0]} [ -h ] [ -i <input> ] [ -f ] [ -o <output> ] [ -a <algorithm> ]
     -h              show this help
     -i <input>      input file
@@ -46,7 +33,8 @@ if (isset($opts['h'])) { $h = <<<E
                     (use `help` to show available algorithms)
 
 E;
-die($h); }
+    die($h);
+}
 
 if (isset($opts['a']) && $opts['a'] === 'help') {
     foreach ($algorithms as $algorithm => $description) {
@@ -55,19 +43,26 @@ if (isset($opts['a']) && $opts['a'] === 'help') {
     die();
 }
 
-if ($opts['i'] === '-') { $opts['i'] = 'php://stdin'; }
-if ($opts['o'] === '-') { $opts['o'] = 'php://stdout'; }
+if ($opts['i'] === '-') {
+    $opts['i'] = 'php://stdin';
+}
+if ($opts['o'] === '-') {
+    $opts['o'] = 'php://stdout';
+}
 
 try {
-    $lines = @file($opts['i']);
-    if ($lines === FALSE) { throw new Exception('Cannot read input file.'); }
+    $lines = file($opts['i']);
+    if ($lines === FALSE) {
+        throw new Exception('Cannot read input file.');
+    }
 
-    $stream = new PaccTokenFilterOutStream(
-        PaccLexer::fromString(implode('', $lines)),
-        array('PaccWhitespaceToken', 'PaccCommentToken')
+    $ignoredTokenClasses = array(
+        \Pacc\Tokens\PaccWhitespaceToken::class,
+        \Pacc\Tokens\PaccCommentToken::class
     );
-    $parser = new PaccParser($stream);
-    $grammar = $parser->parse();
+    $stream              = new PaccTokenFilterOutStream(PaccLexer::fromString(implode('', $lines)), $ignoredTokenClasses);
+    $parser              = new PaccParser($stream);
+    $grammar             = $parser->parse();
 
     if (empty($grammar->name)) {
         throw new Exception('`grammar` statement omitted. Cannot generated parser.');
@@ -76,7 +71,8 @@ try {
     if (!isset($opts['a'])) {
         if (isset($grammar->options['algorithm'])) {
             $opts['a'] = $grammar->options['algorithm'];
-        } else {
+        }
+        else {
             $opts['a'] = current(array_keys($algorithms));
         }
     }
@@ -85,36 +81,37 @@ try {
         throw new Exception('Unknown algorithm `' . $opts['a'] . '`.');
     }
 
-    $generatorclass = 'Pacc' . $opts['a'] . 'Generator';
-    $generator = new $generatorclass($grammar);
+    $generatorclass = '\Pacc\Pacc' . $opts['a'] . 'Generator';
+    $generator      = new $generatorclass($grammar);
 
     if (file_exists($opts['o']) && !isset($opts['f'])) {
         throw new Exception('Output file already exists. Use -f to force overwrite.');
     }
     $generator->writeToFile($opts['o']);
-
-} catch (PaccUnexpectedToken $e) {
-    file_put_contents('php://stderr', 
-        $e->getMessage() . PHP_EOL . 
-        ((string) $e->token->line) . ': ' . rtrim($lines[$e->token->line - 1]) . PHP_EOL .
-        str_repeat(' ', strlen((string) $e->token->line) + $e->token->position + 1) . '^' . PHP_EOL
+}
+catch (PaccUnexpectedToken $e) {
+    file_put_contents('php://stderr',
+                      $e->getMessage() . PHP_EOL .
+            ((string) $e->token->line) . ': ' . rtrim($lines[$e->token->line - 1]) . PHP_EOL .
+            str_repeat(' ', strlen((string) $e->token->line) + $e->token->position + 1) . '^' . PHP_EOL
     );
     die(-1);
-} catch (PaccUnexpectedEnd $e) {
-    file_put_contents('php://stderr', 
-        $e->getMessage() . PHP_EOL
+}
+catch (PaccUnexpectedEnd $e) {
+    file_put_contents('php://stderr', $e->getMessage() . PHP_EOL
     );
     die(-1);
-} catch (PaccBadIdentifier $e) {
-    file_put_contents('php://stderr', 
-        $e->getMessage() . PHP_EOL . 
-        ((string) $e->token->line) . ': ' . rtrim($lines[$e->token->line - 1]) . PHP_EOL .
-        str_repeat(' ', strlen((string) $e->token->line) + $e->token->position + 1) . '^' . PHP_EOL
+}
+catch (PaccBadIdentifier $e) {
+    file_put_contents('php://stderr',
+                      $e->getMessage() . PHP_EOL .
+            ((string) $e->token->line) . ': ' . rtrim($lines[$e->token->line - 1]) . PHP_EOL .
+            str_repeat(' ', strlen((string) $e->token->line) + $e->token->position + 1) . '^' . PHP_EOL
     );
     die(-1);
-} catch (Exception $e) {
-    file_put_contents('php://stderr', 
-        $e->getMessage() . PHP_EOL
+}
+catch (Exception $e) {
+    file_put_contents('php://stderr', $e->getMessage() . PHP_EOL
     );
     die(-1);
 }

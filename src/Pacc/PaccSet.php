@@ -1,9 +1,45 @@
 <?php
+
+/*
+ *  pacc - PHP yACC
+ *  Parser Generator for PHP
+ * 
+ * Copyright (c) 2009-2010 Jakub Kulham (jakubkulhan@gmail.com)
+ *               2017 Alexandre Machado (axmachado@gmail.com)
+ * 
+ * The MIT license
+ * 
+ *     Permission is hereby granted, free of charge, to any person
+ *     obtaining a copy of this software and associated documentation
+ *     files (the "Software"), to deal in the Software without
+ *     restriction, including without limitation the rights to use,
+ *     copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *     copies of the Software, and to permit persons to whom the
+ *     Software is furnished to do so, subject to the following
+ *     conditions:
+ * 
+ *     The above copyright notice and this permission notice shall be
+ *     included in all copies or substantial portions of the Software.
+ * 
+ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ *     OTHER DEALINGS IN THE SOFTWARE.
+ * 
+ */
+
+namespace Pacc;
+
 /**
  * Set implementation - always holds only one copy of some value
  */
-class PaccSet implements Iterator, Countable
+class PaccSet implements \Iterator, \Countable
 {
+
     /**
      * All values in set
      * @var array
@@ -22,10 +58,13 @@ class PaccSet implements Iterator, Countable
      */
     public function __construct($type = NULL)
     {
-        if (!is_string($type)) {
-            throw new InvalidArgumentException('Type has to be a string.');
+        if ($type == null) {
+            throw new \InvalidArgumentException('Type has to be a string.');
         }
-
+        if (!is_string($type)) {
+            $class = new \ReflectionClass($type);
+            $type = $class->getName();
+        }
         $this->type = $type;
     }
 
@@ -36,7 +75,9 @@ class PaccSet implements Iterator, Countable
     {
         if ($o instanceof self && count($o->set) === count($this->set)) {
             foreach ($o as $item) {
-                if (!$this->contains($item)) { return FALSE; }
+                if (!$this->contains($item)) {
+                    return FALSE;
+                }
             }
 
             return TRUE;
@@ -48,7 +89,9 @@ class PaccSet implements Iterator, Countable
     public function __toString()
     {
         $ret = "{\n";
-        foreach ($this->set as $item) { $ret .= '    ' . (string) $item . "\n"; }
+        foreach ($this->set as $item) {
+            $ret .= '    ' . (string) $item . "\n";
+        }
         $ret .= "}\n";
         return $ret;
     }
@@ -92,7 +135,9 @@ class PaccSet implements Iterator, Countable
     {
         if ($item instanceof self) {
             foreach ($item->set as $i) {
-                if (!$this->contains($i)) { return FALSE; }
+                if (!$this->contains($i)) {
+                    return FALSE;
+                }
             }
 
             return TRUE;
@@ -111,7 +156,9 @@ class PaccSet implements Iterator, Countable
     {
         $this->checkType($item);
         $hash = $this->hash($item);
-        if (isset($this->set[$hash])) { unset($this->set[$hash]); }
+        if (isset($this->set[$hash])) {
+            unset($this->set[$hash]);
+        }
         else {
             if (($hash = $this->tryEq($item)) !== NULL) {
                 $this->set[$hash];
@@ -204,20 +251,19 @@ class PaccSet implements Iterator, Countable
     private function checkType($val)
     {
         if (is_resource($val) || gettype($val) === 'unknown type') {
-            throw new InvalidArgumentException(
-                'Bad type - resource unsupported or uknown type'
+            throw new \InvalidArgumentException(
+            'Bad type - resource unsupported or uknown type'
             );
         }
 
         if ($this->type !== NULL && !(gettype($val) === $this->type ||
-            (is_object($val) && $val instanceof $this->type)))
-        {
-            throw new InvalidArgumentException(
-                'Bad type - expected ' .
-                $this->type .
-                ', given ' .
-                (gettype($val)) . (is_object($val) ? ' (' . get_class($val) . ')' : '') .
-                '.'
+                (is_object($val) && $val instanceof $this->type))) {
+            throw new \InvalidArgumentException(
+            'Bad type - expected ' .
+            $this->type .
+            ', given ' .
+            (gettype($val)) . (is_object($val) ? ' (' . get_class($val) . ')' : '') .
+            '.'
             );
         }
     }
@@ -235,11 +281,11 @@ class PaccSet implements Iterator, Countable
                 $a[] = md5(gettype($k) . ':' . $k) . $this->hash($v);
             }
             $ret = md5(implode(',', $a));
-
-        } else if (is_object($val)) {
+        }
+        else if (is_object($val)) {
             $ret = spl_object_hash($val);
-
-        } else {
+        }
+        else {
             $ret = md5(gettype($val) . ':' . ((string) $val));
         }
 
@@ -267,4 +313,5 @@ class PaccSet implements Iterator, Countable
 
         return $ret;
     }
+
 }

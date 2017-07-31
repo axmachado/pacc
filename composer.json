@@ -7,10 +7,20 @@
         {
             "name": "Jakub Kulhan",
             "email": "jakub.kulhan@gmail.com"
+        },
+        {
+            "name": "Alexandre Machado",
+            "email": "axmachado@gmail.com"
         }
     ],
     "require": {
         "php": ">= 5.2.0"
     },
-    "bin": ["bin/pacc"]
+    "bin": ["bin/pacc"],
+    "autoload" : {
+        "psr-4": {
+            "" : "src/"
+        }
+    }
+    
 }
