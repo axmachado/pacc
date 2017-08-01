@@ -12,7 +12,7 @@ $autoloader = __DIR__ . '/../vendor/autoload.php';
 if (!file_exists($autoloader)) {
     $autoloader = './vendor/autoload.php';
 }
-if (!file_exists($autoroader)) {
+if (!file_exists($autoloader)) {
     $autoloader = __DIR__ . '/../../../autoload.php';
 }
 if (file_exists($autoloader)) {
