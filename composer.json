@@ -1,5 +1,5 @@
 {
-    "name": "jakubkulhan/pacc",
+    "name": "axmachado/pacc",
     "description": "Parser generator (currently generates recursive descent parser and canonical LR(1) parser) for PHP.",
     "type": "package",
     "license": "MIT",
