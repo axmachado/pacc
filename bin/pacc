@@ -9,6 +9,12 @@ use Pacc\Exceptions\UnexpectedEnd;
 use Pacc\Exceptions\BadIdentifier;
 
 $autoloader = __DIR__ . '/../vendor/autoload.php';
+if (!file_exists($autoloader)) {
+    $autoloader = './vendor/autoload.php';
+}
+if (!file_exists($autoroader)) {
+    $autoloader = __DIR__ . '/../../../autoload.php';
+}
 if (file_exists($autoloader)) {
     require_once $autoloader;
 }
