@@ -1,12 +1,12 @@
 #!/usr/bin/env php
 <?php
 
-use Pacc\PaccTokenFilterOutStream;
-use Pacc\PaccLexer;
-use Pacc\PaccParser;
-use Pacc\Exceptions\PaccUnexpectedToken;
-use Pacc\Exceptions\PaccUnexpectedEnd;
-use Pacc\Exceptions\PaccBadIdentifier;
+use Pacc\TokenFilterOutStream;
+use Pacc\Lexer;
+use Pacc\Parser;
+use Pacc\Exceptions\UnexpectedToken;
+use Pacc\Exceptions\UnexpectedEnd;
+use Pacc\Exceptions\BadIdentifier;
 
 $autoloader = __DIR__ . '/../vendor/autoload.php';
 if (file_exists($autoloader)) {
@@ -60,8 +60,8 @@ try {
         \Pacc\Tokens\PaccWhitespaceToken::class,
         \Pacc\Tokens\PaccCommentToken::class
     );
-    $stream              = new PaccTokenFilterOutStream(PaccLexer::fromString(implode('', $lines)), $ignoredTokenClasses);
-    $parser              = new PaccParser($stream);
+    $stream              = new TokenFilterOutStream(Lexer::fromString(implode('', $lines)), $ignoredTokenClasses);
+    $parser              = new Parser($stream);
     $grammar             = $parser->parse();
 
     if (empty($grammar->name)) {
@@ -81,7 +81,7 @@ try {
         throw new Exception('Unknown algorithm `' . $opts['a'] . '`.');
     }
 
-    $generatorclass = '\Pacc\Pacc' . $opts['a'] . 'Generator';
+    $generatorclass = "\\Pacc\\" . $opts['a'] . 'Generator';
     $generator      = new $generatorclass($grammar);
 
     if (file_exists($opts['o']) && !isset($opts['f'])) {
@@ -89,7 +89,7 @@ try {
     }
     $generator->writeToFile($opts['o']);
 }
-catch (PaccUnexpectedToken $e) {
+catch (UnexpectedToken $e) {
     file_put_contents('php://stderr',
                       $e->getMessage() . PHP_EOL .
             ((string) $e->token->line) . ': ' . rtrim($lines[$e->token->line - 1]) . PHP_EOL .
@@ -97,12 +97,12 @@ catch (PaccUnexpectedToken $e) {
     );
     die(-1);
 }
-catch (PaccUnexpectedEnd $e) {
+catch (UnexpectedEnd $e) {
     file_put_contents('php://stderr', $e->getMessage() . PHP_EOL
     );
     die(-1);
 }
-catch (PaccBadIdentifier $e) {
+catch (BadIdentifier $e) {
     file_put_contents('php://stderr',
                       $e->getMessage() . PHP_EOL .
             ((string) $e->token->line) . ': ' . rtrim($lines[$e->token->line - 1]) . PHP_EOL .

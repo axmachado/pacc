@@ -32,12 +32,17 @@
  * 
  */
 
-namespace Pacc\Tokens;
+namespace Pacc;
 
 /**
- * Whitespace token
+ * Nonterminal symbol
  */
-class PaccWhitespaceToken extends \Pacc\PaccToken
+class Nonterminal extends Symbol
 {
-    
+
+    public function __toString()
+    {
+        return $this->name;
+    }
+
 }

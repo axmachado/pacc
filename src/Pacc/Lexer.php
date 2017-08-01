@@ -34,19 +34,19 @@
 
 namespace Pacc;
 
-use Pacc\Tokens\PaccWhitespaceToken;
-use Pacc\Tokens\PaccIdToken;
-use Pacc\Tokens\PaccStringToken;
-use Pacc\Tokens\PaccSpecialToken;
-use Pacc\Tokens\PaccCommentToken;
-use Pacc\Tokens\PaccBadToken;
-use Pacc\Tokens\PaccEndToken;
-use Pacc\Tokens\PaccCodeToken;
+use Pacc\Tokens\WhitespaceToken;
+use Pacc\Tokens\IdToken;
+use Pacc\Tokens\StringToken;
+use Pacc\Tokens\SpecialToken;
+use Pacc\Tokens\CommentToken;
+use Pacc\Tokens\BadToken;
+use Pacc\Tokens\EndToken;
+use Pacc\Tokens\CodeToken;
 
 /**
  * Converts string into stream of tokens
  */
-class PaccLexer implements PaccTokenStream
+class Lexer implements TokenStream
 {
 
     /**
@@ -54,12 +54,12 @@ class PaccLexer implements PaccTokenStream
      * @var array
      */
     private static $map = array(
-        '/^(\s+)/Ss'                                                 => PaccWhitespaceToken::class,
-        '/^([a-zA-Z][a-zA-Z_]*)/S'                                   => PaccIdToken::class,
-        '/^(\'(?:\\\'|[^\'])*\'|"(?:\\"|[^"])*"|`(?:\\`|[^`])*`)/SU' => PaccStringToken::class,
-        '/^(@|\\\\|\\.|=|\(|\)|:|\||\{|\}|;)/S'                      => PaccSpecialToken::class,
-        '/^(\/\*.*\*\/)/SUs'                                         => PaccCommentToken::class,
-        '/^(.)/Ss'                                                   => PaccBadToken::class,
+        '/^(\s+)/Ss'                                                 => WhitespaceToken::class,
+        '/^([a-zA-Z][a-zA-Z_]*)/S'                                   => IdToken::class,
+        '/^(\'(?:\\\'|[^\'])*\'|"(?:\\"|[^"])*"|`(?:\\`|[^`])*`)/SU' => StringToken::class,
+        '/^(@|\\\\|\\.|=|\(|\)|:|\||\{|\}|;)/S'                      => SpecialToken::class,
+        '/^(\/\*.*\*\/)/SUs'                                         => CommentToken::class,
+        '/^(.)/Ss'                                                   => PaccBadTokenass,
     );
 
     /**
@@ -70,7 +70,7 @@ class PaccLexer implements PaccTokenStream
 
     /**
      * Current token
-     * @var PaccToken
+     * @var Token
      */
     private $current = NULL;
 
@@ -105,7 +105,7 @@ class PaccLexer implements PaccTokenStream
 
     /**
      * Get current token
-     * @return PaccToken
+     * @return Token
      */
     public function current()
     {
@@ -117,7 +117,7 @@ class PaccLexer implements PaccTokenStream
 
     /**
      * Synonynm for lex()
-     * @return PaccToken
+     * @return Token
      */
     public function next()
     {
@@ -126,7 +126,7 @@ class PaccLexer implements PaccTokenStream
 
     /**
      * Get next token
-     * @return PaccToken
+     * @return Token
      */
     public function lex()
     {
@@ -134,7 +134,7 @@ class PaccLexer implements PaccTokenStream
             return $this->current = array_shift($this->buffer);
         }
         if (empty($this->string)) {
-            return $this->current = new PaccEndToken(NULL, $this->line, $this->position);
+            return $this->current = new EndToken(NULL, $this->line, $this->position);
         }
 
         foreach (self::$map as $regex => $class) {
@@ -144,11 +144,11 @@ class PaccLexer implements PaccTokenStream
 
             $token = new $class($m[1], $this->line, $this->position);
 
-            if ($token instanceof PaccSpecialToken && $m[1] === '{') {
+            if ($token instanceof SpecialToken && $m[1] === '{') {
                 $offset = 0;
                 do {
                     if (($rbrace = strpos($this->string, '}', $offset)) === FALSE) {
-                        array_push($this->buffer, new PaccCodeToken($this->string, $this->line, $this->position + 1));
+                        array_push($this->buffer, new CodeToken($this->string, $this->line, $this->position + 1));
                         return $this->current = $token;
                     }
 
@@ -162,7 +162,7 @@ class PaccLexer implements PaccTokenStream
                 } while (substr_count($test, '{') !== substr_count($test, '}'));
 
                 $code = substr($code, 1, strlen($code) - 2);
-                array_push($this->buffer, new PaccCodeToken($code, $this->line, $this->position + 1));
+                array_push($this->buffer, new CodeToken($code, $this->line, $this->position + 1));
                 $m[1] .= $code;
             }
 

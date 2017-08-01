@@ -34,17 +34,17 @@
 
 namespace Pacc;
 
-use Pacc\Tokens\PaccCodeToken;
-use Pacc\Tokens\PaccEndToken;
-use Pacc\Tokens\PaccIdToken;
-use Pacc\Tokens\PaccSpecialToken;
-use Pacc\Tokens\PaccStringToken;
-use Pacc\Exceptions\PaccUnexpectedToken;
+use Pacc\Tokens\CodeToken;
+use Pacc\Tokens\EndToken;
+use Pacc\Tokens\IdToken;
+use Pacc\Tokens\SpecialToken;
+use Pacc\Tokens\StringToken;
+use Pacc\Exceptions\UnexpectedToken;
 
 /**
  * Fills grammar from token stream
  */
-class PaccParser
+class Parser
 {
 
     /**
@@ -54,7 +54,7 @@ class PaccParser
     private $stream;
 
     /**
-     * @var PaccGrammar
+     * @var Grammar
      */
     private $grammar;
 
@@ -69,23 +69,23 @@ class PaccParser
     private $grammar_options = array();
 
     /**
-     * @var PaccSet <PaccNonterminal>
+     * @var Set <PaccNonterminal>
      */
     private $nonterminals;
 
     /**
-     * @var PaccSet <PaccTerminal>
+     * @var Set <PaccTerminal>
      */
     private $terminals;
 
     /**
-     * @var PaccSet <PaccProduction>
+     * @var Set <PaccProduction>
      */
     private $productions;
 
     /**
      * Start symbol
-     * @var PaccNonterminal
+     * @var Nonterminal
      */
     private $start;
 
@@ -93,33 +93,33 @@ class PaccParser
      * Initializes instance
      * @param PaccTokenStream
      */
-    public function __construct(PaccTokenStream $stream)
+    public function __construct(TokenStream $stream)
     {
         $this->stream       = $stream;
-        $this->terminals    = new PaccSet(PaccTerminal::class);
-        $this->nonterminals = new PaccSet(PaccNonterminal::class);
-        $this->productions  = new PaccSet(PaccProduction::class);
+        $this->terminals    = new Set(Terminal::class);
+        $this->nonterminals = new Set(Nonterminal::class);
+        $this->productions  = new Set(Production::class);
     }
 
     /**
      * Parse
-     * @return PaccGrammar
+     * @return Grammar
      */
     public function parse()
     {
         if ($this->grammar === NULL) {
             for (;;) {
-                if ($this->stream->current() instanceof PaccIdToken &&
+                if ($this->stream->current() instanceof IdToken &&
                         $this->stream->current()->value === 'grammar') {
                     $this->stream->next();
                     $this->grammar_name = $this->backslashSeparatedName();
                 }
-                else if ($this->stream->current() instanceof PaccIdToken &&
+                else if ($this->stream->current() instanceof IdToken &&
                         $this->stream->current()->value === 'option') {
                     $this->stream->next();
                     $this->options();
                 }
-                else if ($this->stream->current() instanceof PaccSpecialToken &&
+                else if ($this->stream->current() instanceof SpecialToken &&
                         $this->stream->current()->value === '@') {
                     $this->stream->next();
                     $name                         = $this->periodSeparatedName();
@@ -130,7 +130,7 @@ class PaccParser
                 }
 
                 // optional semicolon
-                if ($this->stream->current() instanceof PaccSpecialToken &&
+                if ($this->stream->current() instanceof SpecialToken &&
                         $this->stream->current()->value === ';') {
                     $this->stream->next();
                 }
@@ -138,7 +138,7 @@ class PaccParser
 
             $this->rules();
 
-            $this->grammar          = new PaccGrammar($this->nonterminals, $this->terminals, $this->productions,
+            $this->grammar          = new Grammar($this->nonterminals, $this->terminals, $this->productions,
                                                       $this->start);
             $this->grammar->name    = $this->grammar_name;
             $this->grammar->options = $this->grammar_options;
@@ -172,7 +172,7 @@ class PaccParser
         $prev = NULL;
 
         $check = function ($current, $prev) use ($separator) {
-            $result = ($current instanceof PaccSpecialToken && $current->value === $separator) || $current instanceof PaccIdToken;
+            $result = ($current instanceof SpecialToken && $current->value === $separator) || $current instanceof IdToken;
             $result = $result && !($prev === NULL && $current->value === $separator);
             $result = $result && ($prev === NULL || get_class($current) !== get_class($prev));
             return $result;
@@ -184,8 +184,8 @@ class PaccParser
             $this->stream->next();
         }
 
-        if (!($prev instanceof PaccIdToken)) {
-            throw new PaccUnexpectedToken($this->stream->current());
+        if (!($prev instanceof IdToken)) {
+            throw new UnexpectedToken($this->stream->current());
         }
 
         return $name;
@@ -196,21 +196,21 @@ class PaccParser
      */
     private function code()
     {
-        if (!($this->stream->current() instanceof PaccSpecialToken &&
+        if (!($this->stream->current() instanceof SpecialToken &&
                 $this->stream->current()->value === '{')) {
-            throw new PaccUnexpectedToken($this->stream->current());
+            throw new UnexpectedToken($this->stream->current());
         }
         $this->stream->next();
 
-        if (!($this->stream->current() instanceof PaccCodeToken)) {
-            throw new PaccUnexpectedToken($this->stream->current());
+        if (!($this->stream->current() instanceof CodeToken)) {
+            throw new UnexpectedToken($this->stream->current());
         }
         $code = $this->stream->current()->value;
         $this->stream->next();
 
-        if (!($this->stream->current() instanceof PaccSpecialToken &&
+        if (!($this->stream->current() instanceof SpecialToken &&
                 $this->stream->current()->value === '}')) {
-            throw new PaccUnexpectedToken($this->stream->current());
+            throw new UnexpectedToken($this->stream->current());
         }
         $this->stream->next();
 
@@ -222,7 +222,7 @@ class PaccParser
      */
     private function options()
     {
-        if (!($this->stream->current() instanceof PaccSpecialToken &&
+        if (!($this->stream->current() instanceof SpecialToken &&
                 $this->stream->current()->value === '(')) {
             return $this->singleOption();
         }
@@ -230,14 +230,14 @@ class PaccParser
 
         for (;;) {
             $this->singleOption();
-            if ($this->stream->current() instanceof PaccSpecialToken) {
+            if ($this->stream->current() instanceof SpecialToken) {
                 if ($this->stream->current()->value === ')') {
                     $this->stream->next();
                     break;
                 }
                 else if ($this->stream->current()->value === ';') {
                     $this->stream->next();
-                    if ($this->stream->current() instanceof PaccSpecialToken &&
+                    if ($this->stream->current() instanceof SpecialToken &&
                             $this->stream->current()->value === ')') {
                         $this->stream->next();
                         break;
@@ -255,22 +255,22 @@ class PaccParser
         $name  = $this->periodSeparatedName();
         $value = NULL;
 
-        if (!($this->stream->current() instanceof PaccSpecialToken &&
+        if (!($this->stream->current() instanceof SpecialToken &&
                 $this->stream->current()->value === '=')) {
-            throw new PaccUnexpectedToken($this->stream->current());
+            throw new UnexpectedToken($this->stream->current());
         }
         $this->stream->next();
 
-        if ($this->stream->current() instanceof PaccStringToken) {
+        if ($this->stream->current() instanceof StringToken) {
             $value = $this->stream->current()->value;
             $this->stream->next();
         }
-        else if ($this->stream->current() instanceof PaccSpecialToken &&
+        else if ($this->stream->current() instanceof SpecialToken &&
                 $this->stream->current()->value === '{') {
             $value = $this->code();
         }
         else {
-            throw new PaccUnexpectedToken($this->stream->current());
+            throw new UnexpectedToken($this->stream->current());
         }
 
         $this->grammar_options[$name] = $value;
@@ -282,11 +282,11 @@ class PaccParser
     private function rules()
     {
         do {
-            if (!($this->stream->current() instanceof PaccIdToken)) {
-                throw new PaccUnexpectedToken($this->stream->current());
+            if (!($this->stream->current() instanceof IdToken)) {
+                throw new UnexpectedToken($this->stream->current());
             }
 
-            $name  = new PaccNonterminal($this->stream->current()->value);
+            $name  = new Nonterminal($this->stream->current()->value);
             if (($found = $this->nonterminals->find($name)) !== NULL) {
                 $name = $found;
             }
@@ -299,28 +299,28 @@ class PaccParser
                 $this->start = $name;
             }
 
-            if (!($this->stream->current() instanceof PaccSpecialToken &&
+            if (!($this->stream->current() instanceof SpecialToken &&
                     $this->stream->current()->value === ':')) {
-                throw new PaccUnexpectedToken($this->stream->current());
+                throw new UnexpectedToken($this->stream->current());
             }
             $this->stream->next();
 
             do {
                 list($terms, $code) = $this->expression();
-                $production = new PaccProduction($name, $terms, $code);
+                $production = new Production($name, $terms, $code);
                 if (($found      = $this->productions->find($production)) === NULL) {
                     $this->productions->add($production);
                 }
-            } while ($this->stream->current() instanceof PaccSpecialToken &&
+            } while ($this->stream->current() instanceof SpecialToken &&
             $this->stream->current()->value === '|' &&
-            !($this->stream->next() instanceof PaccEndToken));
+            !($this->stream->next() instanceof EndToken));
 
-            if (!($this->stream->current() instanceof PaccSpecialToken &&
+            if (!($this->stream->current() instanceof SpecialToken &&
                     $this->stream->current()->value === ';')) {
-                throw new PaccUnexpectedToken($this->stream->current());
+                throw new UnexpectedToken($this->stream->current());
             }
             $this->stream->next();
-        } while (!($this->stream->current() instanceof PaccEndToken));
+        } while (!($this->stream->current() instanceof EndToken));
     }
 
     /**
@@ -331,7 +331,7 @@ class PaccParser
         $terms = $this->terms();
 
         $code = NULL;
-        if ($this->stream->current() instanceof PaccSpecialToken &&
+        if ($this->stream->current() instanceof SpecialToken &&
                 $this->stream->current()->value === '{') {
             $code = $this->code();
         }
@@ -346,14 +346,14 @@ class PaccParser
     {
         $terms = array();
 
-        while (($this->stream->current() instanceof PaccIdToken ||
-        $this->stream->current() instanceof PaccStringToken)) {
+        while (($this->stream->current() instanceof IdToken ||
+        $this->stream->current() instanceof StringToken)) {
             $t = $this->stream->current();
             $this->stream->next();
 
-            if ($t instanceof PaccIdToken) {
+            if ($t instanceof IdToken) {
                 if (ord($t->value[0]) >= 65 /* A */ && ord($t->value[0]) <= 90 /* Z */) { // terminal
-                    $term  = new PaccTerminal($t->value, $t->value, NULL);
+                    $term  = new Terminal($t->value, $t->value, NULL);
                     if (($found = $this->terminals->find($term)) !== NULL) {
                         $term = $found;
                     }
@@ -362,7 +362,7 @@ class PaccParser
                     }
                 }
                 else { // nonterminal
-                    $term  = new PaccNonterminal($t->value);
+                    $term  = new Nonterminal($t->value);
                     if (($found = $this->nonterminals->find($term)) !== NULL) {
                         $term = $found;
                     }
@@ -372,8 +372,8 @@ class PaccParser
                 }
             }
             else {
-                assert($t instanceof PaccStringToken);
-                $term  = new PaccTerminal($t->value, NULL, $t->value);
+                assert($t instanceof StringToken);
+                $term  = new Terminal($t->value, NULL, $t->value);
                 if (($found = $this->terminals->find($term)) !== NULL) {
                     $term = $found;
                 }

@@ -35,9 +35,20 @@
 namespace Pacc\Tokens;
 
 /**
- * Identifier token
+ * String token
  */
-class PaccIdToken extends \Pacc\PaccToken
+class StringToken extends \Pacc\Token
 {
-    
+
+    protected function value()
+    {
+        // FIXME: eval is evil!        
+        if ($this->lexeme[0] === '"' || $this->lexeme[0] === "'") {
+            $this->value = eval('return ' . $this->lexeme . ';');
+        }
+        else {
+            $this->value = substr($this->lexeme, 1, strlen($this->lexeme) - 2);
+        }
+    }
+
 }

@@ -37,7 +37,7 @@ namespace Pacc;
 /**
  * Set implementation - always holds only one copy of some value
  */
-class PaccSet implements \Iterator, \Countable
+class Set implements \Iterator, \Countable
 {
 
     /**

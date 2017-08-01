@@ -32,12 +32,73 @@
  * 
  */
 
-namespace Pacc\Tokens;
+namespace Pacc;
 
 /**
- * Comment token
+ * Grammar production
  */
-class PaccCommentToken extends \Pacc\PaccToken
+class Production
 {
-    
+
+    /**
+     * @var Nonterminal
+     */
+    public $left;
+
+    /**
+     * @var Symbol[]
+     */
+    public $right;
+
+    /**
+     * @var int
+     */
+    public $index;
+
+    /**
+     * @var string
+     */
+    public $code;
+
+    /**
+     * Initializes production
+     * @param Nonterminal
+     * @param Symbol[]
+     * @param string
+     */
+    public function __construct(Nonterminal $left, array $right, $code = NULL)
+    {
+        $this->left = $left;
+
+        foreach ($right as $symbol) {
+            if (!($symbol instanceof Symbol)) {
+                throw new \InvalidArgumentException('Right has to be array of PaccSymbol.');
+            }
+        }
+        $this->right = $right;
+
+        $this->code = $code;
+    }
+
+    /**
+     * @return bool
+     */
+    public function __eq($o)
+    {
+        if ($o instanceof self &&
+                $this->left->__eq($o->left) &&
+                count($this->right) === count($o->right) &&
+                $this->code === $o->code) {
+            for ($i = 0, $len = count($this->right); $i < $len; ++$i) {
+                if (!$this->right[$i]->__eq($o->right[$i])) {
+                    return FALSE;
+                }
+            }
+
+            return TRUE;
+        }
+
+        return FALSE;
+    }
+
 }

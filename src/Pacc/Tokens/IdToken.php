@@ -32,17 +32,12 @@
  * 
  */
 
-namespace Pacc\Exceptions;
+namespace Pacc\Tokens;
 
 /**
- * Thrown when token stream unexpectedly ended
+ * Identifier token
  */
-class PaccUnexpectedEnd extends \Exception
+class IdToken extends \Pacc\Token
 {
-
-    public function __construct(\Exception $previous = NULL)
-    {
-        parent::__construct('Unexcepted end.', 0, $previous);
-    }
-
+    
 }

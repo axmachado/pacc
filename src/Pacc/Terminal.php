@@ -35,49 +35,32 @@
 namespace Pacc;
 
 /**
- * Grammar production
+ * Terminal symbol
  */
-class PaccProduction
+class Terminal extends Symbol
 {
-
-    /**
-     * @var PaccNonterminal
-     */
-    public $left;
-
-    /**
-     * @var PaccSymbol[]
-     */
-    public $right;
-
-    /**
-     * @var int
-     */
-    public $index;
 
     /**
      * @var string
      */
-    public $code;
+    public $type;
 
     /**
-     * Initializes production
-     * @param PaccNonterminal
-     * @param PaccSymbol[]
+     * @var string
+     */
+    public $value;
+
+    /**
+     * Inizializes instance
+     * @param string
+     * @param string
      * @param string
      */
-    public function __construct(PaccNonterminal $left, array $right, $code = NULL)
+    public function __construct($name, $type = NULL, $value = NULL)
     {
-        $this->left = $left;
-
-        foreach ($right as $symbol) {
-            if (!($symbol instanceof PaccSymbol)) {
-                throw new \InvalidArgumentException('Right has to be array of PaccSymbol.');
-            }
-        }
-        $this->right = $right;
-
-        $this->code = $code;
+        parent::__construct($name);
+        $this->type  = $type;
+        $this->value = $value;
     }
 
     /**
@@ -85,20 +68,17 @@ class PaccProduction
      */
     public function __eq($o)
     {
-        if ($o instanceof self &&
-                $this->left->__eq($o->left) &&
-                count($this->right) === count($o->right) &&
-                $this->code === $o->code) {
-            for ($i = 0, $len = count($this->right); $i < $len; ++$i) {
-                if (!$this->right[$i]->__eq($o->right[$i])) {
-                    return FALSE;
-                }
-            }
-
+        if ($o instanceof self && $o->name === $this->name &&
+                $o->type === $this->type && $o->value === $this->value) {
             return TRUE;
         }
 
         return FALSE;
+    }
+
+    public function __toString()
+    {
+        return '`' . $this->name . '`';
     }
 
 }

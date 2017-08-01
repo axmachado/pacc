@@ -35,53 +35,36 @@
 namespace Pacc;
 
 /**
- * Production with dot and terminal
+ * One grammar symbol
  */
-class PaccLRItem
+abstract class Symbol
 {
 
     /**
-     * @var PaccProduction
-     */
-    public $production;
-
-    /**
      * @var int
      */
-    public $dot = 0;
+    public $index;
 
     /**
-     * @var int
+     * @var string
      */
-    public $terminalindex;
+    public $name;
 
     /**
      * Initializes instance
-     * @param PaccProduction
-     * @param int
-     * @param int
+     * @param string
      */
-    public function __construct(PaccProduction $production, $dot, $terminalindex)
+    public function __construct($name)
     {
-        $this->production    = $production;
-        $this->dot           = $dot;
-        $this->terminalindex = $terminalindex;
+        $this->name = $name;
     }
 
     /**
-     * @return PaccSymbol[]
+     * @return string
      */
-    public function beforeDot()
+    public function __toString()
     {
-        return array_slice($this->production->right, 0, $this->dot);
-    }
-
-    /**
-     * @return PaccSymbol[]
-     */
-    public function afterDot()
-    {
-        return array_slice($this->production->right, $this->dot);
+        return $this->name;
     }
 
     /**
@@ -89,40 +72,10 @@ class PaccLRItem
      */
     public function __eq($o)
     {
-        if ($o instanceof self &&
-                $this->production->__eq($o->production) &&
-                $this->dot === $o->dot &&
-                $this->terminalindex === $o->terminalindex) {
+        if (get_class($o) === get_class($this) && $o->name === $this->name) {
             return TRUE;
         }
-
         return FALSE;
-    }
-
-    public function __toString()
-    {
-        $ret = '[' .
-                $this->production->left->name .
-                ' -> ';
-
-        $syms = array();
-        foreach ($this->beforeDot() as $symbol) {
-            $syms[] = (string) $symbol;
-        }
-        $ret .= implode(' ', $syms);
-
-        $ret .= ' . ';
-
-        $syms = array();
-        foreach ($this->afterDot() as $symbol) {
-            $syms[] = (string) $symbol;
-        }
-        $ret .= implode(' ', $syms);
-
-        $ret .= ', ' .
-                $this->terminalindex .
-                ']';
-        return $ret;
     }
 
 }

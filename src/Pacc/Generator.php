@@ -32,23 +32,43 @@
  * 
  */
 
-namespace Pacc\Tokens;
+namespace Pacc;
 
 /**
- * String token
+ * Base generator
  */
-class PaccStringToken extends \Pacc\PaccToken
+abstract class Generator
 {
 
-    protected function value()
+    /**
+     * Generates parser
+     * @return string
+     */
+    public function __toString()
     {
-        // FIXME: eval is evil!        
-        if ($this->lexeme[0] === '"' || $this->lexeme[0] === "'") {
-            $this->value = eval('return ' . $this->lexeme . ';');
-        }
-        else {
-            $this->value = substr($this->lexeme, 1, strlen($this->lexeme) - 2);
-        }
+        return $this->generate();
     }
 
+    /**
+     * Writes generated output to file
+     * @param string|resource
+     * @return int|bool bytes written, FALSE on failure
+     */
+    public function writeToFile($file)
+    {
+        if (is_string($file)) {
+            return file_put_contents($file, $this->generate());
+        }
+        else if (is_resource($file) && get_resource_type($file) === 'file') {
+            return fwrite($file, $this->generate());
+        }
+
+        throw new BadMethodCallException('Argument file must be a filename or opened file handle.');
+    }
+
+    /**
+     * Generates parser code
+     * @return string generated code
+     */
+    abstract protected function generate();
 }

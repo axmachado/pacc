@@ -37,12 +37,12 @@ namespace Pacc;
 /**
  * Generates recursive descent parser
  */
-class PaccRDGenerator extends PaccGenerator
+class RDGenerator extends Generator
 {
 
     /**
      * Grammar
-     * @var PaccGrammar
+     * @var Grammar
      */
     private $grammar;
 
@@ -96,9 +96,9 @@ class PaccRDGenerator extends PaccGenerator
 
     /**
      * Initializes instance
-     * @param PaccGrammar
+     * @param Grammar
      */
-    public function __construct(PaccGrammar $grammar)
+    public function __construct(Grammar $grammar)
     {
         $this->grammar = $grammar;
 
@@ -141,7 +141,7 @@ class PaccRDGenerator extends PaccGenerator
 
     /**
      * Converts rules to rules tree
-     * @param PaccSet <PaccProduction>
+     * @param Set <PaccProduction>
      * @return array
      */
     protected function treeize($productions)
@@ -155,12 +155,12 @@ class PaccRDGenerator extends PaccGenerator
             $cur = & $ret[$production->left->name];
 
             foreach ($production->right as $symbol) {
-                if ($symbol instanceof PaccNonterminal) {
+                if ($symbol instanceof Nonterminal) {
                     $type  = 'N';
                     $value = $symbol->name;
                 }
                 else {
-                    assert($symbol instanceof PaccTerminal);
+                    assert($symbol instanceof Terminal);
 
                     if ($symbol->type !== NULL) {
                         $type  = 'T';

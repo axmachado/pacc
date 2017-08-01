@@ -37,11 +37,11 @@ namespace Pacc;
 /**
  * Generates LR parser
  */
-class PaccLRGenerator extends PaccGenerator
+class LRGenerator extends Generator
 {
 
     /**
-     * @var PaccGrammar
+     * @var Grammar
      */
     private $grammar;
 
@@ -52,12 +52,12 @@ class PaccLRGenerator extends PaccGenerator
     private $table_pitch;
 
     /**
-     * @var PaccSet[]  <PaccLRItem>
+     * @var Set[]  <PaccLRItem>
      */
     private $states;
 
     /**
-     * @var PaccLRJump[]
+     * @var LRJump[]
      */
     private $jumps;
 
@@ -115,9 +115,9 @@ class PaccLRGenerator extends PaccGenerator
 
     /**
      * Initializes generator
-     * @param PaccGrammar
+     * @param Grammar
      */
-    public function __construct(PaccGrammar $grammar)
+    public function __construct(Grammar $grammar)
     {
         $this->grammar = $grammar;
 
@@ -283,9 +283,9 @@ E;
         // footer
         foreach (array('currentToken', 'currentTokenType', 'currentTokenLexeme', 'nextToken') as $method) {
             if (isset($this->grammar->options[$method])) {
-                $this->generated .= $indentation . 'private function _' . $method . '() {' . $this->eol;
+                $this->generated .= $this->indentation . 'private function _' . $method . '() {' . $this->eol;
                 $this->generated .= $this->grammar->options[$method] . $this->eol;
-                $this->generated .= $indentation . '}' . $this->eol . $this->eol;
+                $this->generated .= $this->indentation . '}' . $this->eol . $this->eol;
             }
         }
 
@@ -310,18 +310,18 @@ E;
      */
     private function augment()
     {
-        $newStart                       = new PaccNonterminal('$start');
-        $this->grammar->startProduction = new PaccProduction($newStart, array($this->grammar->start), NULL);
+        $newStart                       = new Nonterminal('$start');
+        $this->grammar->startProduction = new Production($newStart, array($this->grammar->start), NULL);
         $this->grammar->productions->add($this->grammar->startProduction);
         $this->grammar->nonterminals->add($newStart);
         $this->grammar->start           = $newStart;
 
-        $this->grammar->epsilon        = new PaccTerminal('$epsilon');
+        $this->grammar->epsilon        = new Terminal('$epsilon');
         $this->grammar->epsilon->index = -1;
 
-        $this->grammar->end        = new PaccTerminal('$end');
+        $this->grammar->end        = new Terminal('$end');
         $this->grammar->end->index = 0;
-        $this->grammar->end->first = new PaccSet('integer');
+        $this->grammar->end->first = new Set('integer');
         $this->grammar->end->first->add($this->grammar->end->index);
     }
 
@@ -334,7 +334,7 @@ E;
         $i = 1;
         foreach ($this->grammar->terminals as $terminal) {
             $terminal->index = $i++;
-            $terminal->first = new PaccSet('integer');
+            $terminal->first = new Set('integer');
             $terminal->first->add($terminal->index);
         }
         $this->grammar->terminals->add($this->grammar->end);
@@ -342,8 +342,8 @@ E;
         $this->max_terminal = $i - 1;
 
         foreach ($this->grammar->nonterminals as $nonterminal) {
-            $nonterminal->first  = new PaccSet('integer');
-            $nonterminal->follow = new PaccSet('integer');
+            $nonterminal->first  = new Set('integer');
+            $nonterminal->follow = new Set('integer');
             $nonterminal->index  = $i++;
         }
 
@@ -395,7 +395,7 @@ E;
 
         foreach ($this->grammar->productions as $production) {
             for ($i = 0, $len = count($production->right) - 1; $i < $len; ++$i) {
-                if ($production->right[$i] instanceof PaccTerminal) {
+                if ($production->right[$i] instanceof Terminal) {
                     continue;
                 }
                 foreach ($production->right[$i + 1]->first as $index) {
@@ -411,7 +411,7 @@ E;
             $done = TRUE;
             foreach ($this->grammar->productions as $production) {
                 for ($i = 0, $len = count($production->right); $i < $len; ++$i) {
-                    if ($production->right[$i] instanceof PaccTerminal) {
+                    if ($production->right[$i] instanceof Terminal) {
                         continue;
                     }
 
@@ -437,10 +437,10 @@ E;
      */
     private function computeStates()
     {
-        $items        = new PaccSet(PaccLRItem::class);
-        $items->add(new PaccLRItem($this->grammar->startProduction, 0, $this->grammar->end->index));
+        $items        = new Set(LRItem::class);
+        $items->add(new LRItem($this->grammar->startProduction, 0, $this->grammar->end->index));
         $this->states = array($this->closure($items));
-        $symbols      = new PaccSet('PaccSymbol');
+        $symbols      = new Set(Symbol::class);
         $symbols->add($this->grammar->nonterminals);
         $symbols->add($this->grammar->terminals);
 
@@ -463,7 +463,7 @@ E;
                     $this->states[] = $jump;
                 }
 
-                $this->jumps[] = new PaccLRJump($this->states[$i], $symbol, $jump);
+                $this->jumps[] = new LRJump($this->states[$i], $symbol, $jump);
             }
         }
     }
@@ -534,9 +534,9 @@ E;
     /**
      * @return int
      */
-    private function getNextState(PaccSet $items, PaccSymbol $symbol)
+    private function getNextState(Set $items, Symbol $symbol)
     {
-        if ($items->getType() !== PaccLRItem::class) {
+        if ($items->getType() !== LRItem::class) {
             throw new \InvalidArgumentException(
             'Bad type - expected PaccSet<LRItem>, given PaccSet<' .
             $items->getType() . '>.'
@@ -557,11 +557,11 @@ E;
     }
 
     /**
-     * @return PaccSet <PaccLRItem>
+     * @return Set <PaccLRItem>
      */
-    private function closure(PaccSet $items)
+    private function closure(Set $items)
     {
-        if ($items->getType() !== PaccLRItem::class) {
+        if ($items->getType() !== LRItem::class) {
             throw new \InvalidArgumentException(
             'Bad type - expected PaccSet<LRItem>, given PaccSet<' .
             $items->getType() . '>.'
@@ -575,26 +575,27 @@ E;
 
             foreach ($items as $item) {
                 if (!(count($item->afterDot()) >= 1 &&
-                        current($item->afterDot()) instanceof PaccNonterminal)) {
+                        current($item->afterDot()) instanceof Nonterminal)) {
                     continue;
                 }
 
-                $newitems   = new PaccSet(PaccLRItem::class);
-                $beta_first = new PaccSet('integer');
-                if (count($item->afterDot()) > 1) {
-                    $beta_first->add(next($item->afterDot())->first);
+                $newitems   = new Set(LRItem::class);
+                $beta_first = new Set('integer');
+                $afterDot = $item->afterDot();
+                if (count($afterDot) > 1) {
+                    $beta_first->add(next($afterDot)->first);
                     $beta_first->delete($this->grammar->epsilon->index);
                 }
 
                 if ($beta_first->isEmpty()) {
                     $beta_first->add($item->terminalindex);
                 }
-                $B = current($item->afterDot());
+                $B = current($afterDot);
 
                 foreach ($this->grammar->productions as $production) {
                     if ($B->__eq($production->left)) {
                         foreach ($beta_first as $terminalindex) {
-                            $newitems->add(new PaccLRItem($production, 0, $terminalindex));
+                            $newitems->add(new LRItem($production, 0, $terminalindex));
                         }
                     }
                 }
@@ -612,20 +613,20 @@ E;
     }
 
     /**
-     * @param PaccSet <PaccLRItem>
-     * @param PaccSymbol
-     * @return PaccSet <PaccLRItem>
+     * @param Set <PaccLRItem>
+     * @param Symbol
+     * @return Set <PaccLRItem>
      */
-    private function jump(PaccSet $items, PaccSymbol $symbol)
+    private function jump(Set $items, Symbol $symbol)
     {
-        if ($items->getType() !== PaccLRItem::class) {
+        if ($items->getType() !== LRItem::class) {
             throw new \InvalidArgumentException(
             'Bad type - expected PaccSet<LRItem>, given PaccSet<' .
             $items->getType() . '>.'
             );
         }
 
-        $ret = new PaccSet(PaccLRItem::class);
+        $ret = new Set(LRItem::class);
 
         foreach ($items as $item) {
             if (!(current($item->afterDot()) !== FALSE &&
@@ -633,7 +634,7 @@ E;
                 continue;
             }
 
-            $ret->add(new PaccLRItem($item->production, $item->dot + 1, $item->terminalindex));
+            $ret->add(new LRItem($item->production, $item->dot + 1, $item->terminalindex));
         }
 
         return $this->closure($ret);

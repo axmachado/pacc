@@ -35,50 +35,17 @@
 namespace Pacc;
 
 /**
- * Terminal symbol
+ * Token stream
  */
-class PaccTerminal extends PaccSymbol
+interface TokenStream
 {
 
     /**
-     * @var string
+     * @return Token
      */
-    public $type;
+    function current();
 
     /**
-     * @var string
-     */
-    public $value;
-
-    /**
-     * Inizializes instance
-     * @param string
-     * @param string
-     * @param string
-     */
-    public function __construct($name, $type = NULL, $value = NULL)
-    {
-        parent::__construct($name);
-        $this->type  = $type;
-        $this->value = $value;
-    }
-
-    /**
-     * @return bool
-     */
-    public function __eq($o)
-    {
-        if ($o instanceof self && $o->name === $this->name &&
-                $o->type === $this->type && $o->value === $this->value) {
-            return TRUE;
-        }
-
-        return FALSE;
-    }
-
-    public function __toString()
-    {
-        return '`' . $this->name . '`';
-    }
-
+     * @return PaccToken  */
+    function next();
 }

@@ -32,12 +32,29 @@
  * 
  */
 
-namespace Pacc\Tokens;
+namespace Pacc\Exceptions;
 
 /**
- * Special character token
+ * Thrown if there is some unexpected token in stream
  */
-class PaccSpecialToken extends \Pacc\PaccToken
+class UnexpectedToken extends \Exception
 {
-    
+    /**
+     * @var \Pacc\Token
+     */
+    public $token;
+
+    public function __construct(\Pacc\Token $t, \Exception $previous = NULL)
+    {
+        $this->token = $t;
+        parent::__construct(
+            'Unexcepted token `' . $t->lexeme .
+            '` of type ' . get_class($t) . 
+            ' on line ' . $t->line . 
+            ' at position ' . $t->position .
+            '.',
+            0,
+            $previous
+        );
+    }
 }

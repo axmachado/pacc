@@ -37,7 +37,7 @@ namespace Pacc;
 /**
  * Represents grammar
  */
-class PaccGrammar
+class Grammar
 {
     /**
      * Grammar name
@@ -52,50 +52,50 @@ class PaccGrammar
     public $options = array();
 
     /**
-     * @var PaccSet <PaccNonterminal>
+     * @var Set <PaccNonterminal>
      */
     public $nonterminals;
 
     /**
-     * @var PaccSet <PaccTerminal>
+     * @var Set <PaccTerminal>
      */
     public $terminals;
 
     /**
-     * @var PaccSet <PaccProduction>
+     * @var Set <PaccProduction>
      */
     public $productions;
 
     /**
-     * @var PaccNonterminal
+     * @var Nonterminal
      */
     public $start;
 
     /**
      * Initializes grammar G = (N, T, P, S)
-     * @param PaccSet <PaccNonterminal>
-     * @param PaccSet <PaccTerminal>
-     * @param PaccSet <PaccProduction>
-     * @param PaccNonterminal
+     * @param Set <PaccNonterminal>
+     * @param Set <PaccTerminal>
+     * @param Set <PaccProduction>
+     * @param Nonterminal
      */
-    public function __construct(PaccSet $nonterminals, PaccSet $terminals, PaccSet $productions, PaccNonterminal $start)
+    public function __construct(Set $nonterminals, Set $terminals, Set $productions, Nonterminal $start)
     {
         // check
-        if ($nonterminals->getType() !== PaccNonterminal::class) {
+        if ($nonterminals->getType() !== Nonterminal::class) {
             throw new \InvalidArgumentException(
                 'PaccSet<PaccNonterminal> expected, PaccSet<' . 
                 $nonterminals->getType() . '> given.'
             );
         }
 
-        if ($terminals->getType() !== PaccTerminal::class) {
+        if ($terminals->getType() !== Terminal::class) {
             throw new \InvalidArgumentException(
                 'PaccSet<PaccTerminal> expected, PaccSet<' .
                 $terminals->getType() . '> given.'
             );
         }
 
-        if ($productions->getType() !== PaccProduction::class) {
+        if ($productions->getType() !== Production::class) {
             throw new \InvalidArgumentException(
                 'PaccSet<PaccProduction> expected, PaccSet<' .
                 $productions->getType() . '> given.'

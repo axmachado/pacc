@@ -35,9 +35,9 @@
 namespace Pacc\Tokens;
 
 /**
- * Bad token
+ * Comment token
  */
-class PaccBadToken extends \Pacc\PaccToken
+class CommentToken extends \Pacc\Token
 {
     
 }

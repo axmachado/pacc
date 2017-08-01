@@ -32,21 +32,12 @@
  * 
  */
 
-namespace Pacc;
+namespace Pacc\Tokens;
 
 /**
- * Token stream
+ * Special character token
  */
-interface PaccTokenStream
+class SpecialToken extends \Pacc\Token
 {
-
-    /**
-     * @return PaccToken
-     */
-    function current();
-
-    /**
-     * @return PaccToken
-     */
-    function next();
+    
 }

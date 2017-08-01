@@ -32,42 +32,12 @@
  * 
  */
 
-namespace Pacc;
+namespace Pacc\Tokens;
 
 /**
- * Represents jump from one state to another
+ * End token
  */
-class PaccLRJump
+class EndToken extends \Pacc\Token
 {
-
-    /**
-     * Begining state
-     * @var PaccSet<PaccLRItem>
-     */
-    public $from;
-
-    /**
-     * @var PaccSymbol
-     */
-    public $symbol;
-
-    /**
-     * Ending state
-     * @var PaccSet<PaccLRItem>
-     */
-    public $to;
-
-    /**
-     * Initializes instance
-     * @param PaccSet<PaccLRItem>
-     * @param PaccSymbol
-     * @param PaccSet<PaccLRItem>
-     */
-    public function __construct($from, $symbol, $to)
-    {
-        $this->from   = $from;
-        $this->symbol = $symbol;
-        $this->to     = $to;
-    }
-
+    
 }

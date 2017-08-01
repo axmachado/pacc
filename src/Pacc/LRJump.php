@@ -35,40 +35,39 @@
 namespace Pacc;
 
 /**
- * Base generator
+ * Represents jump from one state to another
  */
-abstract class PaccGenerator
+class LRJump
 {
 
     /**
-     * Generates parser
-     * @return string
+     * Begining state
+     * @var PaccSet<PaccLRItem>
      */
-    public function __toString()
-    {
-        return $this->generate();
-    }
+    public $from;
 
     /**
-     * Writes generated output to file
-     * @param string|resource
-     * @return int|bool bytes written, FALSE on failure
+     * @var Symbol
      */
-    public function writeToFile($file)
-    {
-        if (is_string($file)) {
-            return file_put_contents($file, $this->generate());
-        }
-        else if (is_resource($file) && get_resource_type($file) === 'file') {
-            return fwrite($file, $this->generate());
-        }
-
-        throw new BadMethodCallException('Argument file must be a filename or opened file handle.');
-    }
+    public $symbol;
 
     /**
-     * Generates parser code
-     * @return string generated code
+     * Ending state
+     * @var PaccSet<PaccLRItem>
      */
-    abstract protected function generate();
+    public $to;
+
+    /**
+     * Initializes instance
+     * @param PaccSet<PaccLRItem>
+     * @param Symbol
+     * @param PaccSet<PaccLRItem>
+     */
+    public function __construct($from, $symbol, $to)
+    {
+        $this->from   = $from;
+        $this->symbol = $symbol;
+        $this->to     = $to;
+    }
+
 }

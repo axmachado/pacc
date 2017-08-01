@@ -32,29 +32,12 @@
  * 
  */
 
-namespace Pacc\Exceptions;
+namespace Pacc\Tokens;
 
 /**
- * Thrown if there is some unexpected token in stream
+ * Bad token
  */
-class PaccUnexpectedToken extends \Exception
+class BadToken extends \Pacc\Token
 {
-    /**
-     * @var \Pacc\PaccToken
-     */
-    public $token;
-
-    public function __construct(\Pacc\PaccToken $t, \Exception $previous = NULL)
-    {
-        $this->token = $t;
-        parent::__construct(
-            'Unexcepted token `' . $t->lexeme .
-            '` of type ' . get_class($t) . 
-            ' on line ' . $t->line . 
-            ' at position ' . $t->position .
-            '.',
-            0,
-            $previous
-        );
-    }
+    
 }
