@@ -239,7 +239,7 @@ class LRGenerator extends Generator
             }
 
             if (!isset(\$this->_table[\$state * \$this->_table_pitch + \$terminal])) {
-                throw new Exception('Illegal action.');
+                throw new \Exception('Illegal action.');
             }
 
             \$action = \$this->_table[\$state * \$this->_table_pitch + \$terminal];

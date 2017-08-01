@@ -42,13 +42,13 @@ class StringToken extends \Pacc\Token
 
     protected function value()
     {
-        // FIXME: eval is evil!        
-        if ($this->lexeme[0] === '"' || $this->lexeme[0] === "'") {
-            $this->value = eval('return ' . $this->lexeme . ';');
+        $tempValue = $this->lexeme;
+        $lastIndex = strlen($tempValue) - 1;
+        while (($tempValue[0] === '"' || $tempValue[0] === "'") && $tempValue[0] == $tempValue[$lastIndex]) {
+            $tempValue = substr($tempValue, 1, strlen($tempValue) - 2);
+            $lastIndex = strlen($tempValue) - 1;
         }
-        else {
-            $this->value = substr($this->lexeme, 1, strlen($this->lexeme) - 2);
-        }
+        $this->value = $tempValue;
     }
 
 }

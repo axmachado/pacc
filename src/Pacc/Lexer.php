@@ -59,7 +59,7 @@ class Lexer implements TokenStream
         '/^(\'(?:\\\'|[^\'])*\'|"(?:\\"|[^"])*"|`(?:\\`|[^`])*`)/SU' => StringToken::class,
         '/^(@|\\\\|\\.|=|\(|\)|:|\||\{|\}|;)/S'                      => SpecialToken::class,
         '/^(\/\*.*\*\/)/SUs'                                         => CommentToken::class,
-        '/^(.)/Ss'                                                   => PaccBadTokenass,
+        '/^(.)/Ss'                                                   => PaccBadToken::class,
     );
 
     /**
@@ -173,7 +173,7 @@ class Lexer implements TokenStream
         $this->line += $lines;
 
         if ($lines > 0) {
-            $segments = preg_split("/\r?\n|\r/", $m[1]);
+            $segments       = preg_split("/\r?\n|\r/", $m[1]);
             $this->position = strlen(end($segments)) + 1;
         }
         else {
