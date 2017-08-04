@@ -229,7 +229,7 @@ class LRGenerator extends Generator
         $this->generated .= <<<E
     private function {$this->parse}() {
         \$stack = array(NULL, 0);
-        for (;;) {
+        while(true) {
             \$state = end(\$stack);
             \$terminal = 0;
             if (isset(\$this->_terminals_types[\$this->_currentTokenType()])) {
@@ -248,12 +248,14 @@ class LRGenerator extends Generator
                 array_pop(\$stack); // go away, state!
                 return array_pop(\$stack);
 
-            } else if (\$action > 0) { // => shift
+            } 
+            else if (\$action > 0) { // => shift
                 array_push(\$stack, \$this->_currentToken());
                 array_push(\$stack, \$action);
                 \$this->_nextToken();
 
-            } else { // \$action < 0 => reduce
+            } 
+            else { // \$action < 0 => reduce
                 \$popped = array_splice(\$stack, count(\$stack) - (\$this->_productions_lengths[-\$action] * 2));
                 \$args = array();
                 if (\$this->_productions_lengths[-\$action] > 0) { 
@@ -267,12 +269,15 @@ class LRGenerator extends Generator
                 \$reduce = '_reduce' . (-\$action);
                 if (method_exists(\$this, \$reduce)) {
                     array_push(\$stack, \$this->\$reduce(\$args));
-                } else {
+                } 
+                else {
                     array_push(\$stack, NULL);
                 }
 
                 array_push(\$stack, \$goto);
+    
             }
+    
         }
     }
 
@@ -451,16 +456,19 @@ E;
                     continue;
                 }
                 $already_in = FALSE;
+                $toState    = 0;
                 foreach ($this->states as $state) {
                     if ($state->__eq($jump)) {
                         $already_in = TRUE;
                         $jump       = $state;
                         break;
                     }
+                    $toState++;
                 }
 
                 if (!$already_in) {
                     $this->states[] = $jump;
+                    $toState        = count($this->states) - 1;
                 }
 
                 $this->jumps[] = new LRJump($this->states[$i], $symbol, $jump);
@@ -481,18 +489,18 @@ E;
                 $do_shift = FALSE;
 
                 foreach ($items as $item) {
-                    if (current($item->afterDot()) !== FALSE &&
-                            current($item->afterDot())->__eq($terminal)) {
+                    $afterDot = $item->afterDot();
+                    if (reset($afterDot) !== FALSE &&
+                            reset($afterDot)->__eq($terminal)) {
                         $do_shift = TRUE;
                         break;
                     }
                 }
 
                 if ($do_shift) {
-                    $this->table[$state * $this->table_pitch + $terminal->index] = $this->getNextState($items, $terminal);
-                    if ($this->table[$state * $this->table_pitch + $terminal->index] === NULL) {
-                        throw new Exception('Cannot get next state for shift.');
-                    }
+                    $tableIndex               = $state * $this->table_pitch + $terminal->index;
+                    $nextState                = $this->getNextState($items, $terminal);
+                    $this->table[$tableIndex] = $nextState;
                 }
             }
 
@@ -501,32 +509,34 @@ E;
                 if (count($item->afterDot()) > 0) {
                     continue;
                 }
-                $tableindex = $state * $this->table_pitch + $item->terminalindex;
+                $tableIndex = $state * $this->table_pitch + $item->terminalindex;
 
                 if ($item->production->__eq($this->grammar->startProduction)) { // accept
-                    $this->table[$tableindex] = 0;
+                    $this->table[$tableIndex] = 0;
                 }
                 else {
-                    if (isset($this->table[$tableindex])) {
-                        if ($this->table[$tableindex] > 0) {
-                            throw new Exception('Shift-reduce conflict.');
+                    if (isset($this->table[$tableIndex])) {
+                        if ($this->table[$tableIndex] > 0) {
+                            throw new \Exception('Shift-reduce conflict.');
                         }
-                        else if ($this->table[$tableindex] < 0) {
-                            throw new Exception('Reduce-reduce conflict: ' . $item);
+                        else if ($this->table[$tableIndex] < 0) {
+                            throw new \Exception('Reduce-reduce conflict: ' . $item);
                         }
                         else {
-                            throw new Exception('Accpet-reduce conflict: ' . $item);
+                            throw new \Exception('Accpet-reduce conflict: ' . $item);
                         }
                     }
-
-                    $this->table[$tableindex] = -$item->production->index;
+                    $this->table[$tableIndex] = -$item->production->index;
                 }
             }
 
             // gotos
             foreach ($this->grammar->nonterminals as $nonterminal) {
-                $this->table[$state * $this->table_pitch + $nonterminal->index] = $this->getNextState($items,
-                                                                                                      $nonterminal);
+                $stateToGo  = $this->getNextState($items, $nonterminal);
+                $tableIndex = $state * $this->table_pitch + $nonterminal->index;
+                if ($stateToGo != null) {
+                    $this->table[$tableIndex] = $stateToGo;
+                }
             }
         }
     }
@@ -574,15 +584,16 @@ E;
             $itemscopy = clone $items;
 
             foreach ($items as $item) {
+                $afterDot = $item->afterDot();
                 if (!(count($item->afterDot()) >= 1 &&
-                        current($item->afterDot()) instanceof Nonterminal)) {
+                        reset($afterDot) instanceof Nonterminal)) {
                     continue;
                 }
 
                 $newitems   = new Set(LRItem::class);
                 $beta_first = new Set('integer');
-                $afterDot = $item->afterDot();
                 if (count($afterDot) > 1) {
+                    reset($afterDot);
                     $beta_first->add(next($afterDot)->first);
                     $beta_first->delete($this->grammar->epsilon->index);
                 }
@@ -590,12 +601,13 @@ E;
                 if ($beta_first->isEmpty()) {
                     $beta_first->add($item->terminalindex);
                 }
-                $B = current($afterDot);
+                $B = reset($afterDot);
 
                 foreach ($this->grammar->productions as $production) {
                     if ($B->__eq($production->left)) {
                         foreach ($beta_first as $terminalindex) {
-                            $newitems->add(new LRItem($production, 0, $terminalindex));
+                            $newItem = new LRItem($production, 0, $terminalindex);
+                            $newitems->add($newItem);
                         }
                     }
                 }
@@ -620,21 +632,22 @@ E;
     private function jump(Set $items, Symbol $symbol)
     {
         if ($items->getType() !== LRItem::class) {
-            throw new \InvalidArgumentException(
-            'Bad type - expected PaccSet<LRItem>, given PaccSet<' .
-            $items->getType() . '>.'
-            );
+            throw new \InvalidArgumentException('Bad type - expected PaccSet<LRItem>, given PaccSet<' . $items->getType() . '>.');
         }
 
         $ret = new Set(LRItem::class);
 
         foreach ($items as $item) {
-            if (!(current($item->afterDot()) !== FALSE &&
-                    current($item->afterDot())->__eq($symbol))) {
-                continue;
+            $afterDot        = $item->afterDot();
+            $symbolToProcess = reset($afterDot);
+            if ($symbolToProcess != null) {
+                if (!$symbolToProcess->__eq($symbol)) {
+                    $symbolToProcess = null;
+                }
             }
-
-            $ret->add(new LRItem($item->production, $item->dot + 1, $item->terminalindex));
+            if ($symbolToProcess != null) {
+                $ret->add(new LRItem($item->production, $item->dot + 1, $item->terminalindex));
+            }
         }
 
         return $this->closure($ret);

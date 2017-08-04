@@ -80,6 +80,17 @@ class Production
         $this->code = $code;
     }
 
+    public function __toString() 
+    {
+        $result = $this->left->name . ": ";
+        $rightFormat = function ($symbol) {
+            return $symbol->name;
+        };
+        $result .= implode (" ", array_map($rightFormat, $this->right ? $this->right : array()));
+        $result .= $this->code;
+        return $result;
+    }
+    
     /**
      * @return bool
      */

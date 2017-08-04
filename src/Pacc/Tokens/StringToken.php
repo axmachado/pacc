@@ -47,8 +47,9 @@ class StringToken extends \Pacc\Token
         while (($tempValue[0] === '"' || $tempValue[0] === "'") && $tempValue[0] == $tempValue[$lastIndex]) {
             $tempValue = substr($tempValue, 1, strlen($tempValue) - 2);
             $lastIndex = strlen($tempValue) - 1;
+            
         }
-        $this->value = $tempValue;
+        $this->value = stripcslashes($tempValue);
     }
 
 }

@@ -77,5 +77,5 @@ abstract class Symbol
         }
         return FALSE;
     }
-
+    
 }
