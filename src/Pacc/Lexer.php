@@ -59,7 +59,7 @@ class Lexer implements TokenStream
         '/^(\'(?:\\\'|[^\'])*\'|"(?:\\"|[^"])*"|`(?:\\`|[^`])*`)/SU' => StringToken::class,
         '/^(@|\\\\|\\.|=|\(|\)|:|\||\{|\}|;)/S'                      => SpecialToken::class,
         '/^(\/\*.*\*\/)/SUs'                                         => CommentToken::class,
-        '/^(.)/Ss'                                                   => PaccBadToken::class,
+        '/^(.)/Ss'                                                   => BadToken::class,
     );
 
     /**
