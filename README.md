@@ -24,7 +24,7 @@ repositories section:
 and add the `axmachado/pacc` as a *development requirement*:
 
 ~~~bash
-php composer.phar require --dev axmachado/pacc
+php composer.phar require axmachado/pacc
 ~~~
 
 Then, you can run the "pacc" command from your project directory:
