@@ -2,18 +2,42 @@
 
 Parser generator (currently generates recursive descent parser and canonical LR(1) parser) for PHP.
 
+Big refactoring from Jakub Kulhan's original pacc.
+
 ## Get ready
 
-There is executable `bin/pacc`. However it is dependant on its location in filesystem (because of libraries in `lib/` directory), and therefore there is script `scripts/compile.php`, which compiles all needed libraries and executable into one file. Example usage of script:
+There is executable `bin/pacc`, that is installed by Composer as
+`vendor/bin/pacc`.
 
-    $ ./scripts/compile.php pacc
-    $ chmod +x pacc
-    # mv pacc /usr/bin
+To add PACC to your project, add the repository to your composer.json
+repositories section:
+
+~~~json
+    "repositories": [    
+        {
+            "type": "vcs",
+            "url": "git@github.com:axmachado/pacc.git"
+        }
+    ],
+~~~
+
+and add the `axmachado/pacc` as a *development requirement*:
+
+~~~bash
+php composer.phar require --dev axmachado/pacc
+~~~
+
+Then, you can run the "pacc" command from your project directory:
+
+~~~bash
+./vendor/bin/pacc -h
+~~~
 
 ## Write parsers
 
 Files consumed by `pacc` are structured like this:
 
+~~~yacc
     grammar <<parser_name>>;
 
     option <<option_name>> = <<option_value>>;
@@ -23,17 +47,25 @@ Files consumed by `pacc` are structured like this:
     }
 
     <<rules>>
+~~~
 
 Rules are compiled into PHP parser code, header and footer are left as they are.
 
-`pacc` uses YACC/Bison syntax for rules. Each rule constist of its name, `:`, body, and `;`. Name has to match regular expression `[a-z][a-z_]*`. Body consists of expressions separated by vertical bar – `|`. Each expression can have some attached PHP code. For example:
+`pacc` uses YACC/Bison syntax for rules. Each rule constist of its name, `:`,
+body, and `;`. Name has to match regular expression `[a-z][a-z_]*`. Body
+consists of expressions separated by vertical bar – `|`. Each expression can
+have some attached PHP code. For example: 
 
+~~~yacc
     numerical_operation
         : number '+' number { $$ = $1 + $3; /* $1 is first number, $2 is plus sign, and $3 is second number */ }
         | number '-' number { $$ = $1 - $3; }
         ;
+~~~        
 
-In PHP code, you can use special variables like `$$`, `$1`, `$2`, `$3`,  etc. In `$$` is saved result of expression. Through numerical variables you get result of subexpressions.
+In PHP code, you can use special variables like `$$`, `$1`, `$2`, `$3`,  etc. In
+`$$` is saved result of expression. Through numerical variables you get result
+of subexpressions. 
 
 Look for inspiration in `examples/` directory.
 
@@ -42,6 +74,7 @@ Look for inspiration in `examples/` directory.
 The MIT license
 
     Copyright (c) 2009-2010 Jakub Kulhan <jakub.kulhan@gmail.com>
+    Copyright (c) 2017      Alexandre Machado <axmachado@gmail.com>
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation
