@@ -1,0 +1,32 @@
+
+protected function &_getTable() 
+{
+    return $this->_table;
+}
+
+protected function _getTablePitch()
+{
+    return $this->_table_pitch;
+}
+
+protected function &_getTerminalTypes()
+{
+    return $this->_terminals_types;
+}
+
+protected function &_getTerminalValues()
+{
+    return $this->_terminals_values;
+}
+
+protected function &_getProductionLengths() {
+    return $this->_productions_lengths;
+}
+
+protected function &_getProductionLefts() {
+    return $this->_productions_lefts;
+}
+
+protected function &_getTerminalNames() {
+    return $this->_terminals_names;
+}

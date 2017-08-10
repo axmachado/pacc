@@ -175,7 +175,8 @@ class LRGenerator extends Generator
         }
 
         $this->generated .= $this->header . $this->eol;
-        $this->generated .= 'class ' . $classname . $this->eol . '{' . $this->eol;
+        $this->generated .= 'class ' . $classname . ' extends \Pacc\Runtime\LRParserBase ' . $this->eol;
+        $this->generated .= '{' . $this->eol;
 
         // parser
         $table = array();
@@ -190,16 +191,20 @@ class LRGenerator extends Generator
 
         $terminals_types  = array();
         $terminals_values = array();
+        $terminals_names = array();
         foreach ($this->grammar->terminals as $terminal) {
             if ($terminal->type !== NULL) {
                 $terminals_types[] = $this->terminals_prefix . $terminal->type . '=>' . $terminal->index;
+                $terminals_names[] = $terminal->index . '=> "' . $terminal->type . '"';
             }
             else if ($terminal->value !== NULL) {
                 $terminals_values[] = var_export($terminal->value, TRUE) . '=>' . $terminal->index;
+                $terminals_names[] = $terminal->index . '=> "' . var_export($terminal->value);
             }
         }
-        $this->generated .= $this->indentation . 'private $_terminals_types = array(' . implode(',', $terminals_types) . ');' . $this->eol;
+        $this->generated .= $this->indentation . 'private $_terminals_types = array(' . implode(',', $terminals_types) . ');' . $this->eol;        
         $this->generated .= $this->indentation . 'private $_terminals_values = array(' . implode(',', $terminals_values) . ');' . $this->eol;
+        $this->generated .= $this->indentation . 'private $_terminals_names = array (' . implode (',', $terminals_names) . ');' . $this->eol;
 
         $productions_lengths = array();
         $productions_lefts   = array();
@@ -207,7 +212,9 @@ class LRGenerator extends Generator
             $productions_lengths[] = $production->index . '=>' . count($production->right);
             $productions_lefts[]   = $production->index . '=>' . $production->left->index;
 
-            $this->generated .= $this->indentation . 'private function _reduce' . $production->index . '() {' . $this->eol;
+            $this->generated .= $this->eol;
+            $this->generated .= $this->indentation . 'private function _reduce' . $production->index . '()' . $this->eol;
+            $this->generated .= $this->indentation . '{' . $this->eol;
             $this->generated .= $this->indentation . $this->indentation . 'extract(func_get_arg(0), EXTR_PREFIX_INVALID, \'_\');' . $this->eol;
             $this->generated .= $this->indentation . $this->indentation . $this->phpizeVariables('$$ = NULL;') . $this->eol;
 
@@ -221,81 +228,40 @@ class LRGenerator extends Generator
             $this->generated .= $this->indentation . $this->indentation . $this->phpizeVariables('return $$;') . $this->eol;
             $this->generated .= $this->indentation . '}' . $this->eol;
         }
-        $this->generated .= $this->indentation . 'private $_productions_lengths = array(' . implode(',',
-                                                                                                    $productions_lengths) . ');' . $this->eol;
-        $this->generated .= $this->indentation . 'private $_productions_lefts = array(' . implode(',',
-                                                                                                  $productions_lefts) . ');' . $this->eol;
+        $this->generated .= $this->eol;
+        $this->generated .= $this->indentation . 'private $_productions_lengths = array('
+                . implode(',', $productions_lengths) . ');' . $this->eol;
+        $this->generated .= $this->eol;
+        $this->generated .= $this->indentation . 'private $_productions_lefts = array('
+                . implode(',', $productions_lefts) . ');' . $this->eol;
+        $this->generated .= $this->eol;
 
-        $this->generated .= <<<E
-    private function {$this->parse}() {
-        \$stack = array(NULL, 0);
-        while(true) {
-            \$state = end(\$stack);
-            \$terminal = 0;
-            if (isset(\$this->_terminals_types[\$this->_currentTokenType()])) {
-                \$terminal = \$this->_terminals_types[\$this->_currentTokenType()];
-            } else if (isset(\$this->_terminals_values[\$this->_currentTokenLexeme()])) {
-                \$terminal = \$this->_terminals_values[\$this->_currentTokenLexeme()];
-            }
+        $this->generated .= $this->indentation . 'private function ' . $this->parse . '()' . $this->eol;
+        $this->generated .= $this->indentation . '{' . $this->eol;
+        $this->generated .= $this->indentation . $this->indentation . 'return parent::_doParse();' . $this->eol;
+        $this->generated .= $this->indentation . '}' . $this->eol;
 
-            if (!isset(\$this->_table[\$state * \$this->_table_pitch + \$terminal])) {
-                throw new \Exception('Illegal action.');
-            }
-
-            \$action = \$this->_table[\$state * \$this->_table_pitch + \$terminal];
-
-            if (\$action === 0) { // => accept
-                array_pop(\$stack); // go away, state!
-                return array_pop(\$stack);
-
-            } 
-            else if (\$action > 0) { // => shift
-                array_push(\$stack, \$this->_currentToken());
-                array_push(\$stack, \$action);
-                \$this->_nextToken();
-
-            } 
-            else { // \$action < 0 => reduce
-                \$popped = array_splice(\$stack, count(\$stack) - (\$this->_productions_lengths[-\$action] * 2));
-                \$args = array();
-                if (\$this->_productions_lengths[-\$action] > 0) { 
-                    foreach (range(0, (\$this->_productions_lengths[-\$action] - 1) * 2, 2) as \$i) {
-                        \$args[\$i / 2 + 1] = \$popped[\$i];
-                    }
-                }
-
-                \$goto = \$this->_table[end(\$stack) * \$this->_table_pitch + \$this->_productions_lefts[-\$action]];
-
-                \$reduce = '_reduce' . (-\$action);
-                if (method_exists(\$this, \$reduce)) {
-                    array_push(\$stack, \$this->\$reduce(\$args));
-                } 
-                else {
-                    array_push(\$stack, NULL);
-                }
-
-                array_push(\$stack, \$goto);
-    
-            }
-    
+        $methods = explode("\n", file_get_contents(__DIR__ . '/LRmethods.template'));
+        foreach ($methods as $line) {
+            $this->generated .= $this->indentation . $line . $this->eol;
         }
-    }
-
-
-E;
-
 
         // footer
         foreach (array('currentToken', 'currentTokenType', 'currentTokenLexeme', 'nextToken') as $method) {
             if (isset($this->grammar->options[$method])) {
-                $this->generated .= $this->indentation . 'private function _' . $method . '() {' . $this->eol;
-                $this->generated .= $this->grammar->options[$method] . $this->eol;
+                $this->generated .= $this->indentation . 'private function _' . $method . '()' . $this->eol;
+                $this->generated .= $this->indentation . '{' . $this->eol;
+                $lines           = preg_split('/(\r?\n)|\r/', $this->grammar->options[$method]);
+                foreach ($lines as $line) {
+                    $this->generated .= $this->indentation . $line . $this->eol;
+                }
                 $this->generated .= $this->indentation . '}' . $this->eol . $this->eol;
             }
         }
 
         $this->generated .= $this->inner . $this->eol;
         $this->generated .= '}' . $this->eol;
+        $this->generated .= $this->eol;
         $this->generated .= $this->footer;
     }
 
