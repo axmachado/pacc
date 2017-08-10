@@ -30,3 +30,13 @@ protected function &_getProductionLefts() {
 protected function &_getTerminalNames() {
     return $this->_terminals_names;
 }
+
+protected function _reduce ($action, $args) {
+    $methodName = '_reduce' . abs($action);
+    if (method_exists($this, $methodName)) {
+        return $this->$methodName ($args);
+    }
+    else {
+        return null;
+    }
+}

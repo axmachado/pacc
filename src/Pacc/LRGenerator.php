@@ -186,7 +186,7 @@ class LRGenerator extends Generator
             }
             $table[] = $k . '=>' . $v;
         }
-        $this->generated .= $this->indentation . 'private $_table = array(' . implode(',', $table) . ');' . $this->eol;
+        $this->generated .= $this->indentation . 'private $_table = array(' . implode(', ', $table) . ');' . $this->eol;
         $this->generated .= $this->indentation . 'private $_table_pitch = ' . $this->table_pitch . ';' . $this->eol;
 
         $terminals_types  = array();
@@ -199,12 +199,12 @@ class LRGenerator extends Generator
             }
             else if ($terminal->value !== NULL) {
                 $terminals_values[] = var_export($terminal->value, TRUE) . '=>' . $terminal->index;
-                $terminals_names[] = $terminal->index . '=> "' . var_export($terminal->value);
+                $terminals_names[] = $terminal->index . '=> ' . var_export($terminal->value, TRUE);
             }
         }
-        $this->generated .= $this->indentation . 'private $_terminals_types = array(' . implode(',', $terminals_types) . ');' . $this->eol;        
-        $this->generated .= $this->indentation . 'private $_terminals_values = array(' . implode(',', $terminals_values) . ');' . $this->eol;
-        $this->generated .= $this->indentation . 'private $_terminals_names = array (' . implode (',', $terminals_names) . ');' . $this->eol;
+        $this->generated .= $this->indentation . 'private $_terminals_types = array(' . implode(', ', $terminals_types) . ');' . $this->eol;        
+        $this->generated .= $this->indentation . 'private $_terminals_values = array(' . implode(', ', $terminals_values) . ');' . $this->eol;
+        $this->generated .= $this->indentation . 'private $_terminals_names = array (' . implode (', ', $terminals_names) . ');' . $this->eol;
 
         $productions_lengths = array();
         $productions_lefts   = array();
@@ -213,7 +213,7 @@ class LRGenerator extends Generator
             $productions_lefts[]   = $production->index . '=>' . $production->left->index;
 
             $this->generated .= $this->eol;
-            $this->generated .= $this->indentation . 'private function _reduce' . $production->index . '()' . $this->eol;
+            $this->generated .= $this->indentation . 'protected function _reduce' . $production->index . '()' . $this->eol;
             $this->generated .= $this->indentation . '{' . $this->eol;
             $this->generated .= $this->indentation . $this->indentation . 'extract(func_get_arg(0), EXTR_PREFIX_INVALID, \'_\');' . $this->eol;
             $this->generated .= $this->indentation . $this->indentation . $this->phpizeVariables('$$ = NULL;') . $this->eol;
@@ -249,7 +249,7 @@ class LRGenerator extends Generator
         // footer
         foreach (array('currentToken', 'currentTokenType', 'currentTokenLexeme', 'nextToken') as $method) {
             if (isset($this->grammar->options[$method])) {
-                $this->generated .= $this->indentation . 'private function _' . $method . '()' . $this->eol;
+                $this->generated .= $this->indentation . 'protected function _' . $method . '()' . $this->eol;
                 $this->generated .= $this->indentation . '{' . $this->eol;
                 $lines           = preg_split('/(\r?\n)|\r/', $this->grammar->options[$method]);
                 foreach ($lines as $line) {
