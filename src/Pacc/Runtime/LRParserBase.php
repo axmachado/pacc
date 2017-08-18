@@ -71,8 +71,11 @@ abstract class LRParserBase
      */
     protected abstract function &_getProductionLefts();
 
-    protected abstract function &_getTermialNames();
-    
+    /**
+     * @return array terminal symbol names for error messages.
+     */
+    protected abstract function &_getTerminalNames();
+
     /**
      * This function shoud be overriten by the lexer.
      * @return int the current token type from the lexer
@@ -109,17 +112,32 @@ abstract class LRParserBase
         return $table[$position];
     }
 
-    /**
-     * @param int $$action
-     * @return string the name of the reduce method
-     */
-    protected function _reduceMethodName($action)
+    protected function _getTerminalsForState($state)
     {
-        if ($action < 0) {
-            $action = -$action;
+        $expectedTerminals = array();
+        $visitedStates     = array();
+        $remainingStates   = array($state);
+        $table = $this->_getTable();
+        while (count($remainingStates) > 0) {
+            $currentState = array_pop($remainingStates);
+            array_push($visitedStates, $currentState);
+            for ($i = 0; $i < $this->_getTablePitch(); ++$i) {
+                $expPosition = $currentState * $this->_getTablePitch() + $i;
+                if (isset($table[$expPosition])) {
+                    $terminalName = $this->_getTerminalName($i);
+                    if ($terminalName !== false) {
+                        $expectedTerminals[] = "'" . $terminalName . "'";
+                    }
+                    else {
+                        $targetState = $this->_getProductionLeft($i);
+                        if (array_search ($targetState, $visitedStates) === false) {
+                            array_push($remainingStates, $targetState);
+                        }
+                    }
+                }
+            }
         }
-        $name = '_reduce' . $action;
-        return $name;
+        return $expectedTerminals;
     }
 
     protected function _getAction($state, $terminal)
@@ -127,15 +145,9 @@ abstract class LRParserBase
         $position = $state * $this->_getTablePitch() + $terminal;
         $table    = $this->_getTable();
         if (!isset($table[$position])) {
-            $expectedTerminals = array();            
-            for ($i = 0; $i < $this->_getTablePitch(); ++$i) {
-                $expPosition = $state * $this->_getTablePitch() + $i;
-                if (isset($table[$expPosition])) {
-                    $expectedTerminals[] = "'" . $this->_getTerminalName($i) . "'";
-                }
-            }
+            $expectedTerminals = $this->_getTerminalsForState($state);
             $msg = "Invalid symbol. Expected: " . implode(" or ", $expectedTerminals)
-                    . " but found '" . $this->_getTerminalName($terminal) . "'." ;
+                    . " but found '" . $this->_getTerminalName($terminal) . "'.";
             throw new \Exception($msg);
         }
         return $table[$position];
@@ -175,18 +187,17 @@ abstract class LRParserBase
         return $lefts[$action];
     }
 
-    protected function _execReduceMethod ($action, $args) {
-        $reduceMethod = $this->_reduceMethodName($action);
-        if (method_exists($this, $reduceMethod)) {
-            return $this->$reduceMethod($args);
-        }
-        else {
-            return null;
-        }
-    }
-    
-    protected function _getTerminalName($terminalIndex) {
-        $names = $this->_getTermialNames();
+    /**
+     * Execute the "reduction" of a production.
+     * @param int $action number of the production (-parser action)
+     * @param array $args arguments.
+     * @return mixed 
+     */
+    protected abstract function _reduce($action, $args);
+
+    protected function _getTerminalName($terminalIndex)
+    {
+        $names = $this->_getTerminalNames();
         if (isset($names[$terminalIndex])) {
             return $names[$terminalIndex];
         }
@@ -195,11 +206,11 @@ abstract class LRParserBase
                 return "EOF";
             }
             else {
-                return "INVALID TERMINAL";
+                return false;
             }
         }
     }
-    
+
     protected function _doParse()
     {
         $stack = array(NULL, 0);
@@ -235,9 +246,9 @@ abstract class LRParserBase
                 }
                 $goto = $this->_getAction(end($stack), $this->_getProductionLeft($action));
 
-                array_push($stack, $this->_execReduceMethod($action, $args));
+                array_push($stack, $this->_reduce($action, $args));
 
-                $array_push($stack, $goto);
+                array_push($stack, $goto);
             }
         }
     }
