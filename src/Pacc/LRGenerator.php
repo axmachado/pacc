@@ -199,7 +199,7 @@ class LRGenerator extends Generator
             }
             else if ($terminal->value !== NULL) {
                 $terminals_values[] = var_export($terminal->value, TRUE) . '=>' . $terminal->index;
-                $terminals_names[] = $terminal->index . '=> "' . var_export($terminal->value);
+                $terminals_names[] = $terminal->index . '=> ' . var_export($terminal->value, TRUE) ;
             }
         }
         $this->generated .= $this->indentation . 'private $_terminals_types = array(' . implode(',', $terminals_types) . ');' . $this->eol;        
