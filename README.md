@@ -6,26 +6,14 @@ Big refactoring from Jakub Kulhan's original pacc.
 
 ## Get ready
 
-There is executable `bin/pacc`, that is installed by Composer as
-`vendor/bin/pacc`.
-
-To add PACC to your project, add the repository to your composer.json
-repositories section:
-
-~~~json
-    "repositories": [    
-        {
-            "type": "vcs",
-            "url": "git@github.com:axmachado/pacc.git"
-        }
-    ],
-~~~
-
-and add the `axmachado/pacc` as a *development requirement*:
+add the `axmachado/pacc` as a *development requirement*:
 
 ~~~bash
 php composer.phar require axmachado/pacc
 ~~~
+
+There is executable `bin/pacc`, that is installed by Composer as
+`vendor/bin/pacc`.
 
 Then, you can run the "pacc" command from your project directory:
 
