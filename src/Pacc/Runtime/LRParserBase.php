@@ -114,28 +114,10 @@ abstract class LRParserBase
 
     protected function _getTerminalsForState($state)
     {
+        $terminals = $this->_getTerminalIdsForState($state);
         $expectedTerminals = array();
-        $visitedStates     = array();
-        $remainingStates   = array($state);
-        $table = $this->_getTable();
-        while (count($remainingStates) > 0) {
-            $currentState = array_pop($remainingStates);
-            array_push($visitedStates, $currentState);
-            for ($i = 0; $i < $this->_getTablePitch(); ++$i) {
-                $expPosition = $currentState * $this->_getTablePitch() + $i;
-                if (isset($table[$expPosition])) {
-                    $terminalName = $this->_getTerminalName($i);
-                    if ($terminalName !== false) {
-                        $expectedTerminals[] = "'" . $terminalName . "'";
-                    }
-                    else {
-                        $targetState = $this->_getProductionLeft($i);
-                        if (array_search ($targetState, $visitedStates) === false) {
-                            array_push($remainingStates, $targetState);
-                        }
-                    }
-                }
-            }
+        foreach ($terminals as $terminal) {
+            $expectedTerminals[] = $this->_getTerminalNames()[$terminal];
         }
         return $expectedTerminals;
     }

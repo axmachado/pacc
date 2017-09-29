@@ -114,6 +114,11 @@ class LRGenerator extends Generator
     private $parse = 'doParse';
 
     /**
+     * @var Valid terminals in each state
+     */
+    private $validTerminals = array();
+
+    /**
      * Initializes generator
      * @param Grammar
      */
@@ -191,7 +196,7 @@ class LRGenerator extends Generator
 
         $terminals_types  = array();
         $terminals_values = array();
-        $terminals_names = array();
+        $terminals_names  = array();
         foreach ($this->grammar->terminals as $terminal) {
             if ($terminal->type !== NULL) {
                 $terminals_types[] = $this->terminals_prefix . $terminal->type . '=>' . $terminal->index;
@@ -199,12 +204,27 @@ class LRGenerator extends Generator
             }
             else if ($terminal->value !== NULL) {
                 $terminals_values[] = var_export($terminal->value, TRUE) . '=>' . $terminal->index;
-                $terminals_names[] = $terminal->index . '=> ' . var_export($terminal->value, TRUE);
+                $terminals_names[]  = $terminal->index . '=> ' . var_export($terminal->value, TRUE);
             }
         }
-        $this->generated .= $this->indentation . 'private $_terminals_types = array(' . implode(', ', $terminals_types) . ');' . $this->eol;        
+        $this->generated .= $this->indentation . 'private $_terminals_types = array(' . implode(', ', $terminals_types) . ');' . $this->eol;
         $this->generated .= $this->indentation . 'private $_terminals_values = array(' . implode(', ', $terminals_values) . ');' . $this->eol;
-        $this->generated .= $this->indentation . 'private $_terminals_names = array (' . implode (', ', $terminals_names) . ');' . $this->eol;
+        $this->generated .= $this->indentation . 'private $_terminals_names = array (' . implode(', ', $terminals_names) . ');' . $this->eol;
+
+        $state_items = array();
+        foreach ($this->validTerminals as $state => $values) {
+            $terminalIds = array();
+            foreach ($values as $terminal) {
+                $terminalIds[] = $terminal->index;
+            }
+            if (count($terminalIds) > 0) {
+                $item          = $state . ' => array (' . implode(', ', $terminalIds) . ')';
+                $state_items[] = $this->indentation . $this->indentation . $item;
+            }
+        }
+        $this->generated .= $this->indentation . 'private $_terminals_state = array (' . $this->eol;
+        $this->generated .= implode("," . $this->eol, $state_items) . $this->eol;
+        $this->generated .= $this->indentation . ');';
 
         $productions_lengths = array();
         $productions_lefts   = array();
@@ -411,12 +431,10 @@ class LRGenerator extends Generator
         $items        = new Set(LRItem::class);
         $items->add(new LRItem($this->grammar->startProduction, 0, $this->grammar->end->index));
         $this->states = array($this->closure($items));
-        $symbols      = new Set(Symbol::class);
-        $symbols->add($this->grammar->nonterminals);
-        $symbols->add($this->grammar->terminals);
 
         for ($i = 0; $i < count($this->states); ++$i) { // intentionally count() in second clause
-            foreach ($symbols as $symbol) {
+            $validSymbols = $this->validSymbols($this->states[$i]);
+            foreach ($validSymbols as $symbol) {
                 $jump = $this->jump($this->states[$i], $symbol);
                 if ($jump->isEmpty()) {
                     continue;
@@ -440,6 +458,21 @@ class LRGenerator extends Generator
                 $this->jumps[] = new LRJump($this->states[$i], $symbol, $jump);
             }
         }
+        file_put_contents('php://stderr', sprintf("%d states - %d jumps... ", count($this->states), count($this->jumps)));
+    }
+
+    private function lookForAcceptedTerminals($state)
+    {
+        $ret = new Set(Terminal::class);
+        foreach ($state as $item) {
+            $afterDot = $item->afterDot();
+            if (reset($afterDot) !== FALSE) {
+                if ($afterDot[0] instanceof Terminal) {
+                    $ret->add($afterDot[0]);
+                }
+            }
+        }
+        return $ret;
     }
 
     /**
@@ -447,11 +480,13 @@ class LRGenerator extends Generator
      */
     private function computeTable()
     {
+        $this->validTerminals = array();
         for ($state = 0, $len = count($this->states); $state < $len; ++$state) {
-            $items = $this->states[$state];
-
+            file_put_contents('php://stderr', ".");
+            $items                        = $this->states[$state];
             // shifts
-            foreach ($this->grammar->terminals as $terminal) {
+            $this->validTerminals[$state] = $this->lookForAcceptedTerminals($items);
+            foreach ($this->validTerminals[$state] as $terminal) {
                 $do_shift = FALSE;
 
                 foreach ($items as $item) {
@@ -520,10 +555,12 @@ class LRGenerator extends Generator
         }
 
         foreach ($this->jumps as $jump) {
-            if ($jump->from->__eq($items) && $jump->symbol->__eq($symbol)) {
-                for ($i = 0, $len = count($this->states); $i < $len; ++$i) {
-                    if ($jump->to->__eq($this->states[$i])) {
-                        return $i;
+            if ($jump->symbol->__eq($symbol)) {
+                if ($jump->from->__eq($items)) {
+                    for ($i = 0, $len = count($this->states); $i < $len; ++$i) {
+                        if ($jump->to->__eq($this->states[$i])) {
+                            return $i;
+                        }
                     }
                 }
             }
@@ -588,6 +625,18 @@ class LRGenerator extends Generator
         } while (!$done);
 
         return $items;
+    }
+
+    private function validSymbols(Set $items)
+    {
+        $ret = new Set(Symbol::class);
+        foreach ($items as $item) {
+            $afterDot = $item->afterDot();
+            if (isset($afterDot[0])) {
+                $ret->add($afterDot[0]);
+            }
+        }
+        return $ret;
     }
 
     /**
